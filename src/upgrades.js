@@ -1,17 +1,21 @@
+function existingWeight(level) {
+  return Math.max(1.2, 3 - (level - 1) * 0.35);
+}
+
 function generateChoices(player) {
   const candidates = [];
 
   for (const w of player.weapons) {
     const def = weaponDef(w.id);
     if (w.level < def.maxLevel) {
-      candidates.push({ type: "weapon", id: w.id, isNew: false, weight: 3 });
+      candidates.push({ type: "weapon", id: w.id, isNew: false, weight: existingWeight(w.level) });
     }
   }
 
   for (const s of player.passives) {
     const def = skillDef(s.id);
     if (s.level < def.maxLevel) {
-      candidates.push({ type: "skill", id: s.id, isNew: false, weight: 3 });
+      candidates.push({ type: "skill", id: s.id, isNew: false, weight: existingWeight(s.level) });
     }
   }
 
