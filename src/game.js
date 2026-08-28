@@ -15,12 +15,16 @@ class Game {
     this.projectiles = [];
     this.gems = [];
     this.heals = [];
+    this.magnets = [];
     this.lightningBolts = [];
     this.boss = null;
     this.bossWarning = 0;
 
     this.spawnTimer = 1;
     this.swarmTimer = 12;
+    this.healTimer = 60;
+    this.magnetTimer = 100;
+    this.magnetBurst = 0;
     this.spawnRadius = 600;
 
     this.pendingLevelUps = 0;
@@ -60,6 +64,7 @@ class Game {
     this.projectiles.length = 0;
     this.gems.length = 0;
     this.heals.length = 0;
+    this.magnets.length = 0;
     this.lightningBolts.length = 0;
     Particles.reset();
     this.boss = null;
@@ -67,6 +72,9 @@ class Game {
     this.time = 0;
     this.spawnTimer = 1;
     this.swarmTimer = 12;
+    this.healTimer = 60;
+    this.magnetTimer = 100;
+    this.magnetBurst = 0;
     this.pendingLevelUps = 0;
     this.currentChoices = [];
     this.midBossSpawned = false;
@@ -170,11 +178,6 @@ class Game {
     }
     this.stats.enemiesKilled++;
     this.dropGem(e.x, e.y, e.xpValue);
-    if (e.elite) {
-      this.dropHeal(e.x, e.y, CONFIG.heal.eliteAmount);
-    } else if (chance(CONFIG.heal.dropChance)) {
-      this.dropHeal(e.x, e.y, CONFIG.heal.amount);
-    }
     Particles.burst(e.x, e.y, e.elite ? "#ff8a3d" : e.color, e.elite ? 18 : 8, e.elite ? 200 : 120, e.elite ? 5 : 3);
     if (chance(0.5)) this.audio.play("enemyDie");
     if (e.elite) {
@@ -201,7 +204,14 @@ class Game {
       x: x + rand(-4, 4),
       y: y + rand(-4, 4),
       amount: amount,
-      life: CONFIG.heal.lifetime,
+      bob: rand(0, Math.PI * 2),
+    });
+  }
+
+  dropMagnet(x, y) {
+    this.magnets.push({
+      x: x + rand(-4, 4),
+      y: y + rand(-4, 4),
       bob: rand(0, Math.PI * 2),
     });
   }
@@ -216,24 +226,69 @@ class Game {
     this.audio.play("xp");
   }
 
+  activateMagnet() {
+    this.magnetBurst = CONFIG.magnet.burstDuration;
+    Particles.ring(this.player.x, this.player.y, "#e55dff", 120, 0.4, 5);
+    Particles.burst(this.player.x, this.player.y, "#e55dff", 16, 220, 4);
+    this.audio.play("nova");
+  }
+
   handleHeals(dt) {
     const p = this.player;
     const heals = this.heals;
     for (let i = heals.length - 1; i >= 0; i--) {
       const h = heals[i];
       h.bob += dt;
-      h.life -= dt;
-      if (h.life <= 0) {
-        heals[i] = heals[heals.length - 1];
-        heals.pop();
-        continue;
-      }
       const rr = p.radius + CONFIG.heal.radius;
       if (dist2(h.x, h.y, p.x, p.y) < rr * rr) {
         heals[i] = heals[heals.length - 1];
         heals.pop();
         this.healPlayer(h.amount);
       }
+    }
+  }
+
+  handleMagnets(dt) {
+    const p = this.player;
+    const magnets = this.magnets;
+    for (let i = magnets.length - 1; i >= 0; i--) {
+      const m = magnets[i];
+      m.bob += dt;
+      const rr = p.radius + CONFIG.magnet.radius;
+      if (dist2(m.x, m.y, p.x, p.y) < rr * rr) {
+        magnets[i] = magnets[magnets.length - 1];
+        magnets.pop();
+        this.activateMagnet();
+      }
+    }
+  }
+
+  updatePickupSpawning(dt) {
+    this.healTimer -= dt;
+    if (this.healTimer <= 0) {
+      this.healTimer = rand(CONFIG.heal.spawnMin, CONFIG.heal.spawnMax);
+      this.spawnNaturalPickup("heal");
+      if (this.magnetTimer < 5) this.magnetTimer = 5;
+    }
+    this.magnetTimer -= dt;
+    if (this.magnetTimer <= 0) {
+      this.magnetTimer = rand(CONFIG.magnet.spawnMin, CONFIG.magnet.spawnMax);
+      this.spawnNaturalPickup("magnet");
+      if (this.healTimer < 5) this.healTimer = 5;
+    }
+  }
+
+  spawnNaturalPickup(kind) {
+    const a = Math.random() * Math.PI * 2;
+    const d = rand(150, 330);
+    const x = this.player.x + Math.cos(a) * d;
+    const y = this.player.y + Math.sin(a) * d;
+    if (kind === "heal") {
+      this.dropHeal(x, y, CONFIG.heal.amount);
+      Particles.ring(x, y, "#6dff9a", 40, 0.4, 3);
+    } else {
+      this.dropMagnet(x, y);
+      Particles.ring(x, y, "#e55dff", 40, 0.4, 3);
     }
   }
 
@@ -286,7 +341,6 @@ class Game {
     for (let i = 0; i < 6; i++) {
       this.dropGem(boss.x + rand(-60, 60), boss.y + rand(-60, 60), 15);
     }
-    this.dropHeal(boss.x + rand(-20, 20), boss.y + rand(-20, 20), CONFIG.heal.eliteAmount);
     Particles.burst(boss.x, boss.y, boss.color, 40, 320, 6);
     Particles.ring(boss.x, boss.y, boss.color, boss.radius * 3, 0.5, 6);
     this.addShake(12);
@@ -353,6 +407,9 @@ class Game {
     if (this.state !== "PLAYING") return;
     this.handleGems(dt);
     this.handleHeals(dt);
+    this.handleMagnets(dt);
+    if (this.magnetBurst > 0) this.magnetBurst -= dt;
+    this.updatePickupSpawning(dt);
 
     if (this.bossWarning > 0) this.bossWarning -= dt;
 
@@ -479,6 +536,7 @@ class Game {
     const p = this.player;
     const gems = this.gems;
     const pr = p.pickupRadius;
+    const bursting = this.magnetBurst > 0;
     for (let i = gems.length - 1; i >= 0; i--) {
       const g = gems[i];
       g.bob += dt;
@@ -488,9 +546,9 @@ class Game {
         g.magnetized = true;
       }
 
-      if (g.magnetized) {
+      if (g.magnetized || bursting) {
         const d = Math.sqrt(d2) || 1;
-        const speed = 900;
+        const speed = bursting ? CONFIG.magnet.burstSpeed : CONFIG.magnet.pullSpeed;
         g.x += (p.x - g.x) / d * speed * dt;
         g.y += (p.y - g.y) / d * speed * dt;
       }
@@ -550,6 +608,9 @@ class Game {
     for (const g of this.gems) this.drawGem(ctx, g);
     for (const h of this.heals) {
       if (this.inView(h.x, h.y, halfW, halfH)) this.drawHeal(ctx, h);
+    }
+    for (const m of this.magnets) {
+      if (this.inView(m.x, m.y, halfW, halfH)) this.drawMagnet(ctx, m);
     }
     for (const e of this.enemies) {
       if (this.inView(e.x, e.y, halfW, halfH)) drawEnemy(ctx, e);
@@ -639,6 +700,32 @@ class Game {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(-r * 0.55, -r * 0.2, r * 1.1, r * 0.4);
     ctx.fillRect(-r * 0.2, -r * 0.55, r * 0.4, r * 1.1);
+    ctx.restore();
+  }
+
+  drawMagnet(ctx, m) {
+    const bob = Math.sin(m.bob * 3) * 1.5;
+    const y = m.y + bob;
+    const r = CONFIG.magnet.radius;
+    ctx.save();
+    ctx.translate(m.x, y);
+    ctx.lineCap = "round";
+    ctx.shadowColor = "#e55dff";
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = "#e55dff";
+    ctx.lineWidth = r * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.7, r * 0.55);
+    ctx.lineTo(-r * 0.7, -r * 0.15);
+    ctx.arc(0, -r * 0.15, r * 0.7, Math.PI, 0, true);
+    ctx.lineTo(r * 0.7, r * 0.55);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(-r * 0.7, r * 0.55, r * 0.22, 0, Math.PI * 2);
+    ctx.arc(r * 0.7, r * 0.55, r * 0.22, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 

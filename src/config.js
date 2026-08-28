@@ -12,19 +12,27 @@ const CONFIG = {
   },
 
   xp: {
-    base: 55,
-    growth: 1.24,
+    base: 25,
+    growth: 1.22,
     small: 5,
     medium: 15,
     large: 50,
   },
 
   heal: {
-    dropChance: 0.02,
     amount: 25,
-    eliteAmount: 40,
     radius: 11,
-    lifetime: 15,
+    spawnMin: 60,
+    spawnMax: 90,
+  },
+
+  magnet: {
+    radius: 12,
+    burstDuration: 2.5,
+    pullSpeed: 900,
+    burstSpeed: 1600,
+    spawnMin: 90,
+    spawnMax: 140,
   },
 
   arena: {
