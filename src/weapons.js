@@ -192,8 +192,11 @@ function fireWeapon(game, w, st) {
         }
       }
       if (cleared > 0) {
-        Particles.ring(player.x, player.y, "#9ad8ff", st.radius, 0.4, 4);
+        Particles.ring(player.x, player.y, "#9ad8ff", st.radius, 0.45, 5);
+        Particles.burst(player.x, player.y, "#9ad8ff", 8, 120, 3);
         game.audio.play("nova");
+      } else {
+        Particles.ring(player.x, player.y, "#9ad8ff", st.radius * 0.45, 0.3, 2);
       }
       return true;
     }
