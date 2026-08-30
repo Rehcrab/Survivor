@@ -45,7 +45,7 @@ const CONFIG = {
 
   gold: {
     enemyChance: 0.001,
-    enemyAmount: 1,
+    enemyAmount: 30,
     bossAmountMid: 75,
     bossAmountFinal: 150,
     chestChance: 0.4,

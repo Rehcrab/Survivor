@@ -162,13 +162,14 @@ class Boss {
   fireBurst(game) {
     const isFinal = this.name === "Void Tyrant";
     const ph = this.phase();
-    let count = isFinal ? 20 : 14;
-    let speed = isFinal ? 260 : 210;
-    if (ph === 2) count += 3;
-    else if (ph === 3) { count += 6; speed += 40; }
+    let count = isFinal ? 14 : 10;
+    let speed = isFinal ? 240 : 200;
+    if (ph === 2) count += 2;
+    else if (ph === 3) { count += 4; speed += 30; }
+    const dmg = this.getDamage() * 0.5;
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + this.spin * 0.5;
-      game.fireEnemyProjectile(this.x, this.y, Math.cos(a), Math.sin(a), speed, this.getDamage());
+      game.fireEnemyProjectile(this.x, this.y, Math.cos(a), Math.sin(a), speed, dmg);
     }
     game.audio.play("fireball");
   }
@@ -183,7 +184,7 @@ class Boss {
       const mult = difficultyMult(game);
       let type = "basic";
       if (ph === 2) type = pick(["basic", "basic", "tank"]);
-      else type = pick(["tank", "ranged", "tank", "basic"]);
+      else type = pick(["tank", "tank", "basic"]);
       const elite = ph === 3 && chance(0.25);
       game.enemies.push(createEnemy(type, x, y, { hpMult: mult.hp, dmgMult: mult.dmg, speedMult: mult.speed, elite }));
     }
