@@ -680,3 +680,11 @@ html, body {
   color: var(--text);
   font-weight: 600;
 }
+
+.speed-btn {
+  width: auto;
+  min-width: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}

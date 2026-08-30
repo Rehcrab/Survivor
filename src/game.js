@@ -5,6 +5,7 @@ class Game {
     this.camera = new Camera();
     this.state = "MENU";
     this.time = 0;
+    this.speedMult = 1;
     this.screenW = window.innerWidth;
     this.screenH = window.innerHeight;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -621,7 +622,7 @@ class Game {
       if (!p.active || !p.friendly) continue;
 
       const boss = this.boss;
-      if (boss && boss.hp > 0) {
+      if (p.kind !== "plasma" && boss && boss.hp > 0) {
         const rr = p.radius + boss.radius;
         if (dist2(p.x, p.y, boss.x, boss.y) < rr * rr) {
           if (p.kind === "fireball") {
@@ -665,6 +666,16 @@ class Game {
           this.damageEnemy(e, p.damage);
           p.remainingHits--;
           if (p.remainingHits <= 0) { p.active = false; break; }
+          continue;
+        }
+
+        if (p.kind === "plasma") {
+          if (p.hit[e.id]) continue;
+          p.hit[e.id] = true;
+          this.damageEnemy(e, p.damage);
+          p.damage += p.bounceBonus;
+          p.bounces--;
+          if (p.bounces <= 0) { p.active = false; break; }
           continue;
         }
 
@@ -759,13 +770,19 @@ class Game {
 
   update(dt) {
     if (this.state === "PLAYING") {
-      this.updatePlaying(dt);
+      this.updatePlaying(dt * this.speedMult);
     } else if (this.state === "LEVEL_UP" || this.state === "PAUSED") {
       Particles.update(dt);
     } else if (this.state === "CHEST") {
       this.updateChest(dt);
       Particles.update(dt);
     }
+  }
+
+  cycleSpeed() {
+    this.speedMult = this.speedMult >= 4 ? 1 : this.speedMult * 2;
+    UI.updateSpeedLabel(this);
+    this.audio.play("click");
   }
 
   render() {
@@ -1045,6 +1062,24 @@ class Game {
         continue;
       }
 
+      if (p.kind === "plasma") {
+        const pulse = 1 + Math.sin(p.age * 20) * 0.15;
+        ctx.save();
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        continue;
+      }
+
       ctx.save();
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
@@ -1090,6 +1125,26 @@ class Game {
 
   drawPlayer(ctx) {
     const p = this.player;
+
+    for (const w of p.weapons) {
+      if (w.id === "aura") {
+        const st = effectiveStats(this, w.id, w.level);
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, st.radius);
+        grad.addColorStop(0, "rgba(93, 255, 154, 0.30)");
+        grad.addColorStop(0.6, "rgba(93, 255, 154, 0.13)");
+        grad.addColorStop(1, "rgba(93, 255, 154, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, st.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(93, 255, 154, 0.45)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, st.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
     if (p.invulnTimer > 0 && Math.floor(p.invulnTimer * 20) % 2 === 0) {
       ctx.globalAlpha = 0.35;
     }
@@ -1120,7 +1175,7 @@ class Game {
 
     for (const w of p.weapons) {
       if (w.id === "blades") {
-        const st = weaponStats(w.id, w.level);
+        const st = effectiveStats(this, w.id, w.level);
         for (let i = 0; i < st.bladeCount; i++) {
           const a = w.angle + (i / st.bladeCount) * Math.PI * 2;
           const bx = p.x + Math.cos(a) * st.orbitRadius;

@@ -35,12 +35,26 @@ class Player {
     return 1 + this.growthLevel * 0.2;
   }
 
+  get cooldownMult() {
+    return 1 - this.overdriveLevel * 0.08;
+  }
+
+  get rangeMult() {
+    return 1 + this.amplifyLevel * 0.15;
+  }
+
+  get sizeMult() {
+    return 1 + this.amplifyLevel * 0.15;
+  }
+
   get swiftFeetLevel() { return this.skillLevel("swift_feet"); }
   get magnetLevel() { return this.skillLevel("magnet"); }
   get toughnessLevel() { return this.skillLevel("toughness"); }
   get berserkerLevel() { return this.skillLevel("berserker"); }
   get criticalLevel() { return this.skillLevel("critical_focus"); }
   get growthLevel() { return this.skillLevel("growth"); }
+  get overdriveLevel() { return this.skillLevel("overdrive"); }
+  get amplifyLevel() { return this.skillLevel("amplify"); }
 
   skillLevel(id) {
     const s = this.passives.find(p => p.id === id);

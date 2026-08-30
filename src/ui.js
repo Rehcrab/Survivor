@@ -6,6 +6,8 @@ function skillSuffix(id) {
     case "critical_focus": return "crit chance";
     case "berserker": return "damage below 30% HP";
     case "swift_feet": return "movement speed";
+    case "overdrive": return "weapon cooldown";
+    case "amplify": return "weapon range & size";
     default: return "";
   }
 }
@@ -33,6 +35,11 @@ const WEAPON_STAT_LABELS = [
   ["radius", "Radius"],
   ["knockback", "Knockback"],
   ["range", "Range"],
+  ["heal", "Heal / Tick"],
+  ["maxClear", "Projectiles Cleared"],
+  ["bounces", "Bounces"],
+  ["bounceBonus", "Bounce Damage"],
+  ["lifetime", "Lifetime"],
 ];
 
 function weaponStatLines(id, level) {
@@ -41,10 +48,11 @@ function weaponStatLines(id, level) {
   for (const pair of WEAPON_STAT_LABELS) {
     const key = pair[0], label = pair[1];
     if (st[key] === undefined) continue;
-    if ((key === "knockback" || key === "chainCount") && st[key] === 0) continue;
+    if ((key === "knockback" || key === "chainCount" || key === "heal") && st[key] === 0) continue;
     let v = st[key];
     if (key === "cooldown") v = (v / 1000).toFixed(2) + "s";
     else if (key === "rotationSpeed") v = v.toFixed(1) + " rad/s";
+    else if (key === "lifetime") v = v.toFixed(1) + "s";
     lines.push([label, v]);
   }
   return lines;
@@ -56,7 +64,7 @@ const UI = {
   cache() {
     const ids = [
       "canvas", "hud", "hp-fill", "hp-text", "xp-fill", "level-badge", "timer",
-      "pause-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
+      "pause-btn", "speed-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
       "menu", "levelup", "pause", "gameover", "victory", "settings", "howto",
       "upgrade-cards", "stats-gameover", "stats-victory", "best-score",
@@ -270,6 +278,7 @@ const UI = {
     document.getElementById("btn-menu3").addEventListener("click", () => game.toMenu());
 
     document.getElementById("pause-btn").addEventListener("click", () => game.togglePause());
+    document.getElementById("speed-btn").addEventListener("click", () => game.cycleSpeed());
 
     const sound = document.getElementById("set-sound");
     const music = document.getElementById("set-music");
@@ -285,5 +294,9 @@ const UI = {
 
   updateBestScore() {
     this.el["best-score"].textContent = Settings.bestTime > 0 ? "Best Time: " + formatTime(Settings.bestTime) : "";
+  },
+
+  updateSpeedLabel(game) {
+    if (this.el["speed-btn"]) this.el["speed-btn"].textContent = game.speedMult + "x";
   },
 };

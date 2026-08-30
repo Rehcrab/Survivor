@@ -12,6 +12,20 @@ function weaponStats(id, level) {
   return def.levels[Math.min(level, def.maxLevel) - 1];
 }
 
+function effectiveStats(game, id, level) {
+  const base = weaponStats(id, level);
+  const p = game.player;
+  const rm = p.rangeMult;
+  const sm = p.sizeMult;
+  if (rm === 1 && sm === 1) return base;
+  const out = Object.assign({}, base);
+  const rangeFields = ["explosionRadius", "radius", "orbitRadius", "aoeRadius", "range"];
+  const sizeFields = ["projectileRadius", "bladeRadius"];
+  for (const f of rangeFields) if (out[f] !== undefined) out[f] *= rm;
+  for (const f of sizeFields) if (out[f] !== undefined) out[f] *= sm;
+  return out;
+}
+
 function weaponDef(id) {
   return CONFIG.weapons[id];
 }
@@ -35,7 +49,7 @@ function updateWeapons(game, dt) {
   const player = game.player;
   for (let i = 0; i < player.weapons.length; i++) {
     const w = player.weapons[i];
-    const st = weaponStats(w.id, w.level);
+    const st = effectiveStats(game, w.id, w.level);
 
     if (w.id === "blades") {
       w.angle += st.rotationSpeed * dt;
@@ -46,7 +60,7 @@ function updateWeapons(game, dt) {
     w.cooldown -= dt;
     if (w.cooldown <= 0) {
       const fired = fireWeapon(game, w, st);
-      if (fired) w.cooldown = st.cooldown / 1000;
+      if (fired) w.cooldown = (st.cooldown * player.cooldownMult) / 1000;
     }
   }
 }
@@ -139,6 +153,64 @@ function fireWeapon(game, w, st) {
       Particles.ring(player.x, player.y, "#7ae8ff", st.radius, 0.35, 5);
       game.addShake(5);
       game.audio.play("nova");
+      return true;
+    }
+    case "aura": {
+      const enemies = game.enemies;
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        const d = dist(player.x, player.y, e.x, e.y);
+        if (d <= st.radius + e.radius) {
+          const prox = clamp(1 - d / st.radius, 0.25, 1);
+          game.damageEnemy(e, st.damage * prox);
+        }
+      }
+      if (game.boss && game.boss.hp > 0) {
+        const d = dist(player.x, player.y, game.boss.x, game.boss.y);
+        if (d <= st.radius + game.boss.radius) {
+          const prox = clamp(1 - d / st.radius, 0.25, 1);
+          game.hitBoss(st.damage * prox);
+        }
+      }
+      if (st.heal > 0) {
+        player.hp = Math.min(player.hp + st.heal, player.maxHp);
+      }
+      Particles.ring(player.x, player.y, "#5dff9a", st.radius, 0.4, 4);
+      return true;
+    }
+    case "deflector": {
+      let cleared = 0;
+      const projs = game.projectiles;
+      for (let i = projs.length - 1; i >= 0; i--) {
+        const pr = projs[i];
+        if (!pr.active || pr.friendly) continue;
+        if (dist2(player.x, player.y, pr.x, pr.y) < st.radius * st.radius) {
+          pr.active = false;
+          Particles.burst(pr.x, pr.y, "#9ad8ff", 4, 90, 2);
+          cleared++;
+          if (cleared >= st.maxClear) break;
+        }
+      }
+      if (cleared > 0) {
+        Particles.ring(player.x, player.y, "#9ad8ff", st.radius, 0.4, 4);
+        game.audio.play("nova");
+      }
+      return true;
+    }
+    case "plasma": {
+      const t = nearestEnemy(game, player.x, player.y, 800);
+      if (!t) return false;
+      for (let i = 0; i < st.projectileCount; i++) {
+        const a = angleTo(player.x, player.y, t.x, t.y);
+        game.projectiles.push(createProjectile({
+          x: player.x, y: player.y,
+          vx: Math.cos(a) * st.projectileSpeed, vy: Math.sin(a) * st.projectileSpeed,
+          radius: 8, damage: st.damage, pierce: 0,
+          lifetime: st.lifetime, color: "#b56bff", kind: "plasma",
+          speed: st.projectileSpeed, bounces: st.bounces, bounceBonus: st.bounceBonus,
+        }));
+      }
+      game.audio.play("shoot");
       return true;
     }
   }

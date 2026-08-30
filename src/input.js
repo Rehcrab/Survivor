@@ -13,6 +13,9 @@ const Input = {
       if (e.code === "Escape") {
         if (window.game) window.game.togglePause();
       }
+      if (e.code === "KeyF") {
+        if (window.game && (window.game.state === "PLAYING" || window.game.state === "PAUSED")) window.game.cycleSpeed();
+      }
       if (e.code === "Digit1" || e.code === "Numpad1") { if (window.game) window.game.selectUpgrade(0); }
       if (e.code === "Digit2" || e.code === "Numpad2") { if (window.game) window.game.selectUpgrade(1); }
       if (e.code === "Digit3" || e.code === "Numpad3") { if (window.game) window.game.selectUpgrade(2); }

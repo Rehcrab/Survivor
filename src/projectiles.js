@@ -21,6 +21,9 @@ class Projectile {
     this.returning = false;
     this.startX = 0;
     this.startY = 0;
+    this.speed = 0;
+    this.bounces = 0;
+    this.bounceBonus = 0;
   }
 
   reset(props) {
@@ -46,6 +49,9 @@ class Projectile {
     this.startX = props.x;
     this.startY = props.y;
     this.owner = props.owner || null;
+    this.speed = props.speed || Math.hypot(this.vx, this.vy) || 0;
+    this.bounces = props.bounces || 0;
+    this.bounceBonus = props.bounceBonus || 0;
   }
 }
 
@@ -87,6 +93,21 @@ function updateProjectiles(game, dt) {
         if (dist(p.x, p.y, player.x, player.y) < player.radius + 20) {
           p.active = false;
         }
+      }
+    }
+
+    if (p.kind === "plasma") {
+      let tgt = null, bestD = Infinity;
+      for (let j = 0; j < game.enemies.length; j++) {
+        const e = game.enemies[j];
+        if (p.hit[e.id]) continue;
+        const d = dist2(p.x, p.y, e.x, e.y);
+        if (d < bestD) { bestD = d; tgt = e; }
+      }
+      if (tgt) {
+        const a = angleTo(p.x, p.y, tgt.x, tgt.y);
+        p.vx = Math.cos(a) * p.speed;
+        p.vy = Math.sin(a) * p.speed;
       }
     }
 
