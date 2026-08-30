@@ -52,10 +52,12 @@
         <p class="subtitle">Move · Dodge · Kill · Level Up</p>
         <div class="menu-buttons">
           <button class="btn primary" id="btn-play">PLAY</button>
+          <button class="btn" id="btn-loadout">LOADOUT</button>
           <button class="btn" id="btn-howto">HOW TO PLAY</button>
           <button class="btn" id="btn-settings">SETTINGS</button>
         </div>
         <div id="best-score" class="best-score"></div>
+        <div id="menu-gold" class="best-score gold"></div>
       </div>
     </div>
 
@@ -135,6 +137,16 @@
           <li><b>Survive</b> 10 minutes and beat the final boss</li>
         </ul>
         <button class="btn primary" id="btn-howto-back">BACK</button>
+      </div>
+    </div>
+
+    <div id="loadout" class="overlay hidden">
+      <div class="panel loadout-panel">
+        <h2>LOADOUT</h2>
+        <div id="loadout-gold" class="loadout-gold"></div>
+        <p class="loadout-sub">Pick the weapon you start each run with.</p>
+        <div id="loadout-grid" class="loadout-grid"></div>
+        <button class="btn primary" id="btn-loadout-back">BACK</button>
       </div>
     </div>
   </div>

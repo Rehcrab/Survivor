@@ -3,6 +3,9 @@ const Settings = {
   music: true,
   shake: true,
   bestTime: 0,
+  gold: 0,
+  unlockedWeapons: ["magic_bolt"],
+  startingWeapon: "magic_bolt",
 
   load() {
     try {
@@ -11,6 +14,9 @@ const Settings = {
       this.music = s.music !== false;
       this.shake = s.shake !== false;
       this.bestTime = s.bestTime || 0;
+      this.gold = s.gold || 0;
+      this.unlockedWeapons = Array.isArray(s.unlockedWeapons) ? s.unlockedWeapons : ["magic_bolt"];
+      this.startingWeapon = s.startingWeapon || "magic_bolt";
     } catch (e) { /* ignore */ }
   },
 
@@ -21,6 +27,9 @@ const Settings = {
         music: this.music,
         shake: this.shake,
         bestTime: this.bestTime,
+        gold: this.gold,
+        unlockedWeapons: this.unlockedWeapons,
+        startingWeapon: this.startingWeapon,
       }));
     } catch (e) { /* ignore */ }
   },
@@ -43,6 +52,7 @@ window.addEventListener("orientationchange", () => setTimeout(() => game.resize(
 
 UI.show("menu");
 UI.updateBestScore();
+UI.updateGold();
 
 let last = performance.now();
 function loop(ts) {

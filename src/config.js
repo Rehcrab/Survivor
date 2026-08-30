@@ -43,6 +43,19 @@ const CONFIG = {
     bossHealsMax: 2,
   },
 
+  gold: {
+    enemyChance: 0.001,
+    enemyAmount: 1,
+    bossAmountMid: 75,
+    bossAmountFinal: 150,
+    chestChance: 0.4,
+    chestAmount: 30,
+  },
+
+  shop: {
+    weaponCost: 150,
+  },
+
   arena: {
     gridSize: 90,
   },

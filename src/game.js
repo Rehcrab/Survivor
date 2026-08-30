@@ -18,6 +18,7 @@ class Game {
     this.heals = [];
     this.magnets = [];
     this.chests = [];
+    this.goldDrops = [];
     this.lightningBolts = [];
     this.boss = null;
     this.bossWarning = 0;
@@ -75,13 +76,14 @@ class Game {
 
   startRun() {
     this.player = new Player();
-    this.player.weapons.push(createWeapon("magic_bolt"));
+    this.player.weapons.push(createWeapon(Settings.startingWeapon || "magic_bolt"));
     this.enemies.length = 0;
     this.projectiles.length = 0;
     this.gems.length = 0;
     this.heals.length = 0;
     this.magnets.length = 0;
     this.chests.length = 0;
+    this.goldDrops.length = 0;
     this.lightningBolts.length = 0;
     Particles.reset();
     this.boss = null;
@@ -111,6 +113,7 @@ class Game {
     this.boss = null;
     UI.show("menu");
     UI.updateBestScore();
+    UI.updateGold();
   }
 
   togglePause() {
@@ -196,6 +199,7 @@ class Game {
     }
     this.stats.enemiesKilled++;
     this.dropGem(e.x, e.y, e.xpValue);
+    if (chance(CONFIG.gold.enemyChance)) this.dropGold(e.x, e.y, CONFIG.gold.enemyAmount);
     Particles.burst(e.x, e.y, e.elite ? "#ff8a3d" : e.color, e.elite ? 18 : 8, e.elite ? 200 : 120, e.elite ? 5 : 3);
     if (chance(0.5)) this.audio.play("enemyDie");
     if (e.elite) {
@@ -238,6 +242,15 @@ class Game {
     this.chests.push({
       x: x,
       y: y,
+      bob: rand(0, Math.PI * 2),
+    });
+  }
+
+  dropGold(x, y, amount) {
+    this.goldDrops.push({
+      x: x + rand(-3, 3),
+      y: y + rand(-3, 3),
+      amount: amount,
       bob: rand(0, Math.PI * 2),
     });
   }
@@ -304,6 +317,25 @@ class Game {
     }
   }
 
+  handleGold(dt) {
+    const p = this.player;
+    const gold = this.goldDrops;
+    for (let i = gold.length - 1; i >= 0; i--) {
+      const g = gold[i];
+      g.bob += dt;
+      const rr = p.radius + 12;
+      if (dist2(g.x, g.y, p.x, p.y) < rr * rr) {
+        gold[i] = gold[gold.length - 1];
+        gold.pop();
+        Settings.gold += g.amount;
+        Settings.save();
+        Particles.text(p.x, p.y - p.radius - 8, "+" + g.amount + " gold", "#ffd166", 15);
+        Particles.burst(p.x, p.y, "#ffd166", 6, 120, 3);
+        this.audio.play("xp");
+      }
+    }
+  }
+
   clampToCage(e) {
     const c = this.cage;
     const dx = e.x - c.x, dy = e.y - c.y;
@@ -333,7 +365,16 @@ class Game {
     return items;
   }
 
+  grantChestGold() {
+    if (chance(CONFIG.gold.chestChance)) {
+      Settings.gold += CONFIG.gold.chestAmount;
+      Settings.save();
+      Particles.text(this.player.x, this.player.y - this.player.radius - 20, "+" + CONFIG.gold.chestAmount + " gold", "#ffd166", 16);
+    }
+  }
+
   openChest() {
+    this.grantChestGold();
     const eligible = this.eligibleItems();
     if (eligible.length === 0) {
       for (let i = 0; i < 4; i++) {
@@ -517,6 +558,12 @@ class Game {
     for (let i = 0; i < heals; i++) {
       this.dropHeal(boss.x + rand(-50, 50), boss.y + rand(-50, 50), CONFIG.heal.amount);
     }
+    const isFinalBoss = boss.name === "Void Tyrant";
+    const goldTotal = isFinalBoss ? CONFIG.gold.bossAmountFinal : CONFIG.gold.bossAmountMid;
+    const coins = isFinalBoss ? 6 : 4;
+    for (let i = 0; i < coins; i++) {
+      this.dropGold(boss.x + rand(-70, 70), boss.y + rand(-70, 70), Math.round(goldTotal / coins));
+    }
     Particles.burst(boss.x, boss.y, boss.color, 40, 320, 6);
     Particles.ring(boss.x, boss.y, boss.color, boss.radius * 3, 0.5, 6);
     this.addShake(12);
@@ -588,6 +635,7 @@ class Game {
     this.handleHeals(dt);
     this.handleMagnets(dt);
     this.handleChests(dt);
+    this.handleGold(dt);
     if (this.state !== "PLAYING") return;
     if (this.magnetBurst > 0) this.magnetBurst -= dt;
     this.updatePickupSpawning(dt);
@@ -627,7 +675,7 @@ class Game {
       if (!p.active || !p.friendly) continue;
 
       const boss = this.boss;
-      if (p.kind !== "plasma" && boss && boss.hp > 0) {
+      if (boss && boss.hp > 0) {
         const rr = p.radius + boss.radius;
         if (dist2(p.x, p.y, boss.x, boss.y) < rr * rr) {
           if (p.kind === "fireball") {
@@ -641,6 +689,14 @@ class Game {
               this.hitBoss(p.damage);
               p.remainingHits--;
               if (p.remainingHits <= 0) { p.active = false; continue; }
+            }
+          } else if (p.kind === "plasma") {
+            if (!p.hit[boss.id]) {
+              p.hit[boss.id] = true;
+              this.hitBoss(p.damage);
+              p.damage += p.bounceBonus;
+              p.bounces--;
+              if (p.bounces <= 0) { p.active = false; continue; }
             }
           } else {
             if (!p.hit[boss.id]) {
@@ -816,6 +872,9 @@ class Game {
     for (const c of this.chests) {
       if (this.inView(c.x, c.y, halfW, halfH)) this.drawChest(ctx, c);
     }
+    for (const g of this.goldDrops) {
+      if (this.inView(g.x, g.y, halfW, halfH)) this.drawGold(ctx, g);
+    }
     for (const e of this.enemies) {
       if (this.inView(e.x, e.y, halfW, halfH)) drawEnemy(ctx, e);
     }
@@ -954,6 +1013,31 @@ class Game {
     ctx.fillRect(-s * 0.22, -s * 0.05, s * 0.44, s * 1.15);
     ctx.fillStyle = "#7a4311";
     ctx.fillRect(-s * 0.12, s * 0.1, s * 0.24, s * 0.3);
+    ctx.restore();
+  }
+
+  drawGold(ctx, g) {
+    const bob = Math.sin(g.bob * 3) * 1.5;
+    const y = g.y + bob;
+    const r = 9;
+    ctx.save();
+    ctx.translate(g.x, y);
+    ctx.shadowColor = "#ffd166";
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = "#ffd166";
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#b8860b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r - 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#fff2c0";
+    ctx.beginPath();
+    ctx.arc(-r * 0.3, -r * 0.3, r * 0.3, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 

@@ -104,6 +104,10 @@ function updateProjectiles(game, dt) {
         const d = dist2(p.x, p.y, e.x, e.y);
         if (d < bestD) { bestD = d; tgt = e; }
       }
+      if (game.boss && game.boss.hp > 0 && !p.hit[game.boss.id]) {
+        const d = dist2(p.x, p.y, game.boss.x, game.boss.y);
+        if (d < bestD) { bestD = d; tgt = game.boss; }
+      }
       if (tgt) {
         const a = angleTo(p.x, p.y, tgt.x, tgt.y);
         p.vx = Math.cos(a) * p.speed;

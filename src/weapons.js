@@ -42,6 +42,13 @@ function nearestEnemy(game, x, y, maxDist) {
       best = e;
     }
   }
+  const boss = game.boss;
+  if (boss && boss.hp > 0) {
+    const d = dist2(x, y, boss.x, boss.y);
+    if (d < bestD) {
+      best = boss;
+    }
+  }
   return best;
 }
 
@@ -249,9 +256,10 @@ function updateBlades(game, w, st, dt) {
 }
 
 function nearestNEnemies(game, x, y, n, maxDist) {
-  const result = [];
   const arr = game.enemies.slice();
+  if (game.boss && game.boss.hp > 0) arr.push(game.boss);
   arr.sort((a, b) => dist2(x, y, a.x, a.y) - dist2(x, y, b.x, b.y));
+  const result = [];
   for (let i = 0; i < arr.length && result.length < n; i++) {
     if (maxDist == null || dist2(x, y, arr[i].x, arr[i].y) <= maxDist * maxDist) {
       result.push(arr[i]);
@@ -263,7 +271,8 @@ function nearestNEnemies(game, x, y, n, maxDist) {
 function strikeEnemy(game, e, damage, aoeRadius, chainCount, struck, depth) {
   if (struck.has(e.id)) return;
   struck.add(e.id);
-  game.damageEnemy(e, damage);
+  if (e.id === "boss") game.hitBoss(damage);
+  else game.damageEnemy(e, damage);
   game.addLightningBolt(e.x, e.y - 420, e.x, e.y);
   Particles.burst(e.x, e.y, "#ffe9a8", 6, 140, 3);
   if (e.hp > 0 && chainCount > 0 && depth < 3) {
