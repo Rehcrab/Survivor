@@ -34,11 +34,44 @@ class Boss {
     this.y = game.player.y + Math.sin(a) * r;
   }
 
+  phase() {
+    const frac = this.hp / this.maxHp;
+    if (frac > 0.66) return 1;
+    if (frac > 0.33) return 2;
+    return 3;
+  }
+
+  damageMult() {
+    const ph = this.phase();
+    return ph === 1 ? 1.0 : ph === 2 ? 1.1 : 1.25;
+  }
+
+  getDamage() {
+    return this.damage * this.damageMult();
+  }
+
+  attackInterval() {
+    const ph = this.phase();
+    if (ph === 1) return [1.7, 2.3];
+    if (ph === 2) return [1.0, 1.5];
+    return [0.6, 1.0];
+  }
+
+  telegraphDuration() {
+    const ph = this.phase();
+    return ph === 1 ? 0.9 : ph === 2 ? 0.7 : 0.5;
+  }
+
+  nextApproach() {
+    const iv = this.attackInterval();
+    this.stateTimer = rand(iv[0], iv[1]);
+  }
+
   pickAttack(game) {
     const options = [];
     if (this.attacks.burst) options.push("burst");
     if (this.attacks.charge) options.push("charge");
-    if (this.attacks.summon) options.push("summon");
+    if (this.attacks.summon && this.phase() >= 2) options.push("summon");
     return pick(options);
   }
 
@@ -59,7 +92,7 @@ class Boss {
         if (this.stateTimer <= 0) {
           this.pendingAttack = this.pickAttack(game);
           this.state = "telegraph";
-          this.stateTimer = 0.8;
+          this.stateTimer = this.telegraphDuration();
         }
         break;
       }
@@ -77,7 +110,7 @@ class Boss {
         this.stateTimer -= dt;
         if (this.stateTimer <= 0) {
           this.state = "approach";
-          this.stateTimer = rand(1.0, 1.6);
+          this.nextApproach();
         }
         break;
       }
@@ -87,7 +120,7 @@ class Boss {
         this.stateTimer -= dt;
         if (this.stateTimer <= 0) {
           this.state = "approach";
-          this.stateTimer = 1.2;
+          this.nextApproach();
         }
         break;
       }
@@ -95,7 +128,7 @@ class Boss {
         this.stateTimer -= dt;
         if (this.stateTimer <= 0) {
           this.state = "approach";
-          this.stateTimer = 1.4;
+          this.nextApproach();
         }
         break;
       }
@@ -128,24 +161,31 @@ class Boss {
 
   fireBurst(game) {
     const isFinal = this.name === "Void Tyrant";
-    const count = isFinal ? 20 : 14;
-    const speed = isFinal ? 260 : 210;
+    const ph = this.phase();
+    let count = isFinal ? 20 : 14;
+    let speed = isFinal ? 260 : 210;
+    if (ph === 2) count += 3;
+    else if (ph === 3) { count += 6; speed += 40; }
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + this.spin * 0.5;
-      game.fireEnemyProjectile(this.x, this.y, Math.cos(a), Math.sin(a), speed, this.damage);
+      game.fireEnemyProjectile(this.x, this.y, Math.cos(a), Math.sin(a), speed, this.getDamage());
     }
     game.audio.play("fireball");
   }
 
   spawnMinions(game) {
-    const count = 5;
+    const ph = this.phase();
+    const count = ph === 3 ? 6 : 5;
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2;
       const x = this.x + Math.cos(a) * (this.radius + 30);
       const y = this.y + Math.sin(a) * (this.radius + 30);
       const mult = difficultyMult(game);
-      const type = pick(["basic", "runner"]);
-      game.enemies.push(createEnemy(type, x, y, { hpMult: mult.hp, dmgMult: mult.dmg, speedMult: mult.speed }));
+      let type = "basic";
+      if (ph === 2) type = pick(["basic", "basic", "tank"]);
+      else type = pick(["tank", "ranged", "tank", "basic"]);
+      const elite = ph === 3 && chance(0.25);
+      game.enemies.push(createEnemy(type, x, y, { hpMult: mult.hp, dmgMult: mult.dmg, speedMult: mult.speed, elite }));
     }
   }
 
@@ -189,6 +229,14 @@ class Boss {
     ctx.beginPath();
     ctx.arc(0, r * 0.15, r * 0.22, 0, Math.PI * 2);
     ctx.fill();
+
+    const ph = this.phase();
+    if (ph >= 2) {
+      ctx.fillStyle = ph === 3 ? "rgba(255, 60, 60, 0.20)" : "rgba(255, 60, 60, 0.08)";
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     if (this.hitFlash > 0) {
       ctx.fillStyle = "rgba(255,255,255,0.7)";

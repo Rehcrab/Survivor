@@ -12,8 +12,8 @@ const CONFIG = {
   },
 
   xp: {
-    base: 25,
-    growth: 1.22,
+    base: 20,
+    growth: 1.18,
     small: 5,
     medium: 15,
     large: 50,
@@ -37,8 +37,10 @@ const CONFIG = {
 
   bossArena: {
     cageRadius: 480,
-    chestCrystals: 4,
+    chestCrystals: 6,
     crystalValue: 100,
+    bossHealsMin: 1,
+    bossHealsMax: 2,
   },
 
   arena: {
@@ -140,14 +142,14 @@ const CONFIG = {
       maxLevel: 6,
       description: "Throws a boomerang that returns to you.",
       levels: [
-        { damage: 25, cooldown: 1600, projectileCount: 1, pierce: 4, projectileRadius: 10, projectileSpeed: 420, range: 380 },
-        { damage: 34, cooldown: 1600, projectileCount: 1, pierce: 4, projectileRadius: 10, projectileSpeed: 420, range: 380 },
-        { damage: 34, cooldown: 1600, projectileCount: 2, pierce: 4, projectileRadius: 10, projectileSpeed: 420, range: 380 },
-        { damage: 34, cooldown: 1600, projectileCount: 2, pierce: 4, projectileRadius: 14, projectileSpeed: 420, range: 380 },
-        { damage: 34, cooldown: 1600, projectileCount: 2, pierce: 4, projectileRadius: 14, projectileSpeed: 520, range: 420 },
-        { damage: 48, cooldown: 1600, projectileCount: 2, pierce: 10, projectileRadius: 14, projectileSpeed: 520, range: 420 },
+        { damage: 30, cooldown: 1500, projectileCount: 1, pierce: 4, projectileRadius: 10, projectileSpeed: 460, range: 400 },
+        { damage: 42, cooldown: 1500, projectileCount: 1, pierce: 4, projectileRadius: 10, projectileSpeed: 460, range: 400 },
+        { damage: 42, cooldown: 1500, projectileCount: 2, pierce: 4, projectileRadius: 10, projectileSpeed: 460, range: 400 },
+        { damage: 42, cooldown: 1500, projectileCount: 2, pierce: 4, projectileRadius: 15, projectileSpeed: 460, range: 400 },
+        { damage: 42, cooldown: 1500, projectileCount: 2, pierce: 4, projectileRadius: 15, projectileSpeed: 560, range: 460 },
+        { damage: 60, cooldown: 1500, projectileCount: 2, pierce: 10, projectileRadius: 15, projectileSpeed: 560, range: 460 },
       ],
-      upgradeText: ["", "+35% damage", "+1 boomerang", "+40% size", "+25% speed", "+40% damage & +6 pierce"],
+      upgradeText: ["", "+40% damage", "+1 boomerang", "+50% size", "+20% speed", "+45% damage & +6 pierce"],
     },
     nova: {
       name: "Nova",
@@ -158,9 +160,9 @@ const CONFIG = {
         { damage: 35, cooldown: 2600, radius: 150, knockback: 0 },
         { damage: 35, cooldown: 2600, radius: 205, knockback: 0 },
         { damage: 50, cooldown: 2600, radius: 205, knockback: 0 },
-        { damage: 50, cooldown: 2600, radius: 205, knockback: 280 },
-        { damage: 50, cooldown: 1900, radius: 205, knockback: 280 },
-        { damage: 70, cooldown: 1900, radius: 265, knockback: 320 },
+        { damage: 50, cooldown: 2600, radius: 205, knockback: 360 },
+        { damage: 50, cooldown: 1900, radius: 205, knockback: 360 },
+        { damage: 70, cooldown: 1900, radius: 265, knockback: 440 },
       ],
       upgradeText: ["", "+35% radius", "+40% damage", "Knockback", "-25% cooldown", "+30% radius & damage"],
     },
@@ -240,7 +242,7 @@ const CONFIG = {
     growth: {
       name: "Growth", icon: "🌱", maxLevel: 5,
       description: "Increases XP gained from enemies.",
-      effects: ["+20%", "+40%", "+60%", "+80%", "+100%"],
+      effects: ["+15%", "+30%", "+45%", "+60%", "+75%"],
     },
     overdrive: {
       name: "Overdrive", icon: "🚀", maxLevel: 5,
@@ -256,11 +258,11 @@ const CONFIG = {
 
   bosses: {
     mid: {
-      name: "Ruins Warden", radius: 46, hp: 1800, speed: 75, damage: 22, xp: 300, color: "#ff4d8d",
+      name: "Ruins Warden", radius: 46, hp: 2700, speed: 75, damage: 26, xp: 300, color: "#ff4d8d",
       attacks: { burst: true, charge: true, summon: true },
     },
     final: {
-      name: "Void Tyrant", radius: 58, hp: 3600, speed: 90, damage: 28, xp: 900, color: "#b04dff",
+      name: "Void Tyrant", radius: 58, hp: 5400, speed: 90, damage: 32, xp: 900, color: "#b04dff",
       attacks: { burst: true, charge: true, summon: true },
     },
   },

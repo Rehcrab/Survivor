@@ -32,7 +32,7 @@ class Player {
   }
 
   get xpMult() {
-    return 1 + this.growthLevel * 0.2;
+    return 1 + this.growthLevel * 0.15;
   }
 
   get cooldownMult() {

@@ -509,9 +509,14 @@ class Game {
     const boss = this.boss;
     const per = Math.round(boss.xp / 3);
     for (let i = 0; i < CONFIG.bossArena.chestCrystals; i++) {
-      this.dropGem(boss.x + rand(-70, 70), boss.y + rand(-70, 70), per);
+      this.dropGem(boss.x + rand(-80, 80), boss.y + rand(-80, 80), per);
     }
     this.dropChest(boss.x, boss.y);
+    this.dropMagnet(boss.x + rand(-30, 30), boss.y + rand(-30, 30));
+    const heals = randInt(CONFIG.bossArena.bossHealsMin, CONFIG.bossArena.bossHealsMax);
+    for (let i = 0; i < heals; i++) {
+      this.dropHeal(boss.x + rand(-50, 50), boss.y + rand(-50, 50), CONFIG.heal.amount);
+    }
     Particles.burst(boss.x, boss.y, boss.color, 40, 320, 6);
     Particles.ring(boss.x, boss.y, boss.color, boss.radius * 3, 0.5, 6);
     this.addShake(12);
@@ -568,7 +573,7 @@ class Game {
       this.boss.update(this, dt);
       if (this.cage) this.clampToCage(this.boss);
       if (dist(p.x, p.y, this.boss.x, this.boss.y) < this.boss.radius + p.radius) {
-        this.hitPlayer(this.boss.damage);
+        this.hitPlayer(this.boss.getDamage());
       }
     }
 
