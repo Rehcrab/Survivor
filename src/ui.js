@@ -182,10 +182,13 @@ const UI = {
     }
   },
 
-  weaponTip(id, level) {
+  weaponTip(id, level, dmg, pct) {
     const def = weaponDef(id);
     let html = '<div class="tip-name">' + def.icon + " " + def.name + "</div>";
     html += '<div class="tip-level">Level ' + level + " / " + def.maxLevel + "</div>";
+    if (dmg != null) {
+      html += '<div class="tip-damage">' + Math.round(dmg) + " damage · " + pct + "%</div>";
+    }
     html += '<div class="tip-desc">' + def.description + "</div>";
     const lines = weaponStatLines(id, level);
     if (lines.length) {
@@ -231,9 +234,12 @@ const UI = {
     wc.innerHTML = "";
     pc.innerHTML = "";
     const p = game.player;
+    const total = game.stats.damageDealt || 0;
     for (const w of p.weapons) {
       const def = weaponDef(w.id);
-      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level)));
+      const dmg = game.weaponDamage[w.id] || 0;
+      const pct = total > 0 ? Math.round(dmg / total * 100) : 0;
+      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level, dmg, pct)));
     }
     for (const s of p.passives) {
       const def = skillDef(s.id);

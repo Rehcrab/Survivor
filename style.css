@@ -778,3 +778,10 @@ html, body {
   opacity: 0.6;
   cursor: default;
 }
+
+.tip-damage {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 700;
+  margin-top: 4px;
+}

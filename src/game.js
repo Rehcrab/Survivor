@@ -51,6 +51,8 @@ class Game {
     this.finalBossSpawned = false;
 
     this.stats = {};
+    this.weaponDamage = {};
+    this.lastRunGold = 0;
     this.resetStats();
   }
 
@@ -100,6 +102,8 @@ class Game {
     this.midBossSpawned = false;
     this.finalBossSpawned = false;
     this.resetStats();
+    this.weaponDamage = {};
+    this.lastRunGold = 0;
     this.camera.snapTo(this.player.x, this.player.y);
     this.state = "PLAYING";
     UI.hideAll();
@@ -167,25 +171,32 @@ class Game {
     this.lightningBolts.push({ x1, y1, x2, y2, age: 0, life: 0.22 });
   }
 
-  damageEnemy(e, baseDamage) {
+  trackDamage(sourceId, amount) {
+    if (!sourceId) return;
+    this.weaponDamage[sourceId] = (this.weaponDamage[sourceId] || 0) + amount;
+  }
+
+  damageEnemy(e, baseDamage, sourceId) {
     const crit = chance(this.player.critChance);
     const mult = this.player.damageMultiplier();
     const dmg = baseDamage * mult * (crit ? CONFIG.player.critDamage : 1);
     e.hp -= dmg;
     e.hitFlash = 0.08;
     this.stats.damageDealt += dmg;
+    this.trackDamage(sourceId, dmg);
     if (crit) Particles.text(e.x, e.y - e.radius - 4, Math.round(dmg) + "!", "#ffd166", 17);
     else if (chance(0.18)) Particles.text(e.x, e.y - e.radius - 4, Math.round(dmg), "#e8ecf8", 12);
     if (e.hp <= 0) this.killEnemy(e);
   }
 
-  hitBoss(baseDamage) {
+  hitBoss(baseDamage, sourceId) {
     const b = this.boss;
     const crit = chance(this.player.critChance);
     const dmg = baseDamage * this.player.damageMultiplier() * (crit ? CONFIG.player.critDamage : 1);
     b.hp -= dmg;
     b.hitFlash = 0.08;
     this.stats.damageDealt += dmg;
+    this.trackDamage(sourceId, dmg);
     if (crit) Particles.text(b.x, b.y - b.radius - 10, Math.round(dmg) + "!", "#ffd166", 18);
     else Particles.text(b.x, b.y - b.radius - 10, Math.round(dmg), "#e8ecf8", 13);
     if (b.hp <= 0) this.killBoss();
@@ -497,19 +508,19 @@ class Game {
     }
   }
 
-  explode(x, y, radius, dmg) {
+  explode(x, y, radius, dmg, sourceId) {
     const enemies = this.enemies;
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       const rr = radius + e.radius;
       if (dist2(x, y, e.x, e.y) < rr * rr) {
-        this.damageEnemy(e, dmg);
+        this.damageEnemy(e, dmg, sourceId);
       }
     }
     if (this.boss && this.boss.hp > 0) {
       const rr = radius + this.boss.radius;
       if (dist2(x, y, this.boss.x, this.boss.y) < rr * rr) {
-        this.hitBoss(dmg);
+        this.hitBoss(dmg, sourceId);
       }
     }
     Particles.ring(x, y, "#ff8c42", radius, 0.35, 5);
@@ -560,9 +571,15 @@ class Game {
     }
     const isFinalBoss = boss.name === "Void Tyrant";
     const goldTotal = isFinalBoss ? CONFIG.gold.bossAmountFinal : CONFIG.gold.bossAmountMid;
-    const coins = isFinalBoss ? 6 : 4;
-    for (let i = 0; i < coins; i++) {
-      this.dropGold(boss.x + rand(-70, 70), boss.y + rand(-70, 70), Math.round(goldTotal / coins));
+    if (isFinalBoss) {
+      Settings.gold += goldTotal;
+      Settings.save();
+      this.lastRunGold = goldTotal;
+    } else {
+      const coins = 4;
+      for (let i = 0; i < coins; i++) {
+        this.dropGold(boss.x + rand(-70, 70), boss.y + rand(-70, 70), Math.round(goldTotal / coins));
+      }
     }
     Particles.burst(boss.x, boss.y, boss.color, 40, 320, 6);
     Particles.ring(boss.x, boss.y, boss.color, boss.radius * 3, 0.5, 6);
@@ -592,6 +609,7 @@ class Game {
     if (victory) {
       stats.push({ label: "Bosses Defeated", value: this.stats.bossesKilled });
       stats.push({ label: "Damage Dealt", value: Math.floor(this.stats.damageDealt) });
+      stats.push({ label: "Gold Earned", value: "+" + this.lastRunGold });
     }
     UI.showStats(UI.el["stats-" + (victory ? "victory" : "gameover")], stats);
     UI.show(victory ? "victory" : "gameover");
@@ -679,21 +697,21 @@ class Game {
         const rr = p.radius + boss.radius;
         if (dist2(p.x, p.y, boss.x, boss.y) < rr * rr) {
           if (p.kind === "fireball") {
-            this.explode(p.x, p.y, p.explosionRadius, p.damage);
+            this.explode(p.x, p.y, p.explosionRadius, p.damage, p.weaponId);
             p.active = false;
             continue;
           }
           if (p.kind === "boomerang") {
             if (now >= boss.lastBoomHit) {
               boss.lastBoomHit = now + 0.35;
-              this.hitBoss(p.damage);
+              this.hitBoss(p.damage, p.weaponId);
               p.remainingHits--;
               if (p.remainingHits <= 0) { p.active = false; continue; }
             }
           } else if (p.kind === "plasma") {
             if (!p.hit[boss.id]) {
               p.hit[boss.id] = true;
-              this.hitBoss(p.damage);
+              this.hitBoss(p.damage, p.weaponId);
               p.damage += p.bounceBonus;
               p.bounces--;
               if (p.bounces <= 0) { p.active = false; continue; }
@@ -701,7 +719,7 @@ class Game {
           } else {
             if (!p.hit[boss.id]) {
               p.hit[boss.id] = true;
-              this.hitBoss(p.damage);
+              this.hitBoss(p.damage, p.weaponId);
               this.audio.play("hit");
               p.remainingHits--;
               if (p.remainingHits <= 0) { p.active = false; continue; }
@@ -716,7 +734,7 @@ class Game {
         if (dist2(p.x, p.y, e.x, e.y) > rr * rr) continue;
 
         if (p.kind === "fireball") {
-          this.explode(p.x, p.y, p.explosionRadius, p.damage);
+          this.explode(p.x, p.y, p.explosionRadius, p.damage, p.weaponId);
           p.active = false;
           break;
         }
@@ -724,7 +742,7 @@ class Game {
         if (p.kind === "boomerang") {
           if (now < e.lastBoomHit) continue;
           e.lastBoomHit = now + 0.35;
-          this.damageEnemy(e, p.damage);
+          this.damageEnemy(e, p.damage, p.weaponId);
           p.remainingHits--;
           if (p.remainingHits <= 0) { p.active = false; break; }
           continue;
@@ -733,7 +751,7 @@ class Game {
         if (p.kind === "plasma") {
           if (p.hit[e.id]) continue;
           p.hit[e.id] = true;
-          this.damageEnemy(e, p.damage);
+          this.damageEnemy(e, p.damage, p.weaponId);
           p.damage += p.bounceBonus;
           p.bounces--;
           if (p.bounces <= 0) { p.active = false; break; }
@@ -742,7 +760,7 @@ class Game {
 
         if (p.hit[e.id]) continue;
         p.hit[e.id] = true;
-        this.damageEnemy(e, p.damage);
+        this.damageEnemy(e, p.damage, p.weaponId);
         this.audio.play("hit");
         p.remainingHits--;
         if (p.remainingHits <= 0) {

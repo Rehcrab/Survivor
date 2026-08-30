@@ -275,7 +275,7 @@ const CONFIG = {
       attacks: { burst: true, charge: true, summon: true },
     },
     final: {
-      name: "Void Tyrant", radius: 58, hp: 5400, speed: 90, damage: 32, xp: 900, color: "#b04dff",
+      name: "Void Tyrant", radius: 58, hp: 10000, speed: 90, damage: 32, xp: 900, color: "#b04dff",
       attacks: { burst: true, charge: true, summon: true },
     },
   },

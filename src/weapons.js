@@ -85,7 +85,7 @@ function fireWeapon(game, w, st) {
           x: player.x, y: player.y,
           vx: Math.cos(a) * st.projectileSpeed, vy: Math.sin(a) * st.projectileSpeed,
           radius: st.projectileRadius, damage: st.damage, pierce: st.pierce,
-          lifetime: 1.8, color: "#8ff0ff", kind: "bolt",
+          lifetime: 1.8, color: "#8ff0ff", kind: "bolt", weaponId: w.id,
         }));
       }
       game.audio.play("shoot");
@@ -104,7 +104,7 @@ function fireWeapon(game, w, st) {
           vx: Math.cos(a) * st.projectileSpeed, vy: Math.sin(a) * st.projectileSpeed,
           radius: st.projectileRadius, damage: st.damage, pierce: 0,
           lifetime: life, color: "#ff8c42", kind: "fireball",
-          explosionRadius: st.explosionRadius,
+          explosionRadius: st.explosionRadius, weaponId: w.id,
         }));
       }
       game.audio.play("fireball");
@@ -116,7 +116,7 @@ function fireWeapon(game, w, st) {
       const struck = new Set();
       for (let i = 0; i < targets.length; i++) {
         const e = targets[i];
-        strikeEnemy(game, e, st.damage, st.aoeRadius, st.chainCount, struck, 0);
+        strikeEnemy(game, e, st.damage, st.aoeRadius, st.chainCount, struck, 0, w.id);
       }
       game.audio.play("lightning");
       return true;
@@ -131,7 +131,7 @@ function fireWeapon(game, w, st) {
           vx: Math.cos(a) * st.projectileSpeed, vy: Math.sin(a) * st.projectileSpeed,
           radius: st.projectileRadius, damage: st.damage, pierce: st.pierce,
           lifetime: 6, color: "#ffe066", kind: "boomerang",
-          range: st.range, spin: 0, owner: player,
+          range: st.range, spin: 0, owner: player, weaponId: w.id,
         }));
       }
       game.audio.play("shoot");
@@ -143,7 +143,7 @@ function fireWeapon(game, w, st) {
         const e = targets[i];
         const d = dist(player.x, player.y, e.x, e.y);
         if (d <= st.radius + e.radius) {
-          game.damageEnemy(e, st.damage);
+          game.damageEnemy(e, st.damage, w.id);
           if (st.knockback > 0 && e.ranged === false) {
             const a = angleTo(player.x, player.y, e.x, e.y);
             e.kbx += Math.cos(a) * st.knockback;
@@ -154,7 +154,7 @@ function fireWeapon(game, w, st) {
       if (game.boss && game.boss.hp > 0) {
         const b = game.boss;
         if (dist(player.x, player.y, b.x, b.y) <= st.radius + b.radius) {
-          game.hitBoss(st.damage);
+          game.hitBoss(st.damage, w.id);
         }
       }
       Particles.ring(player.x, player.y, "#7ae8ff", st.radius, 0.35, 5);
@@ -169,14 +169,14 @@ function fireWeapon(game, w, st) {
         const d = dist(player.x, player.y, e.x, e.y);
         if (d <= st.radius + e.radius) {
           const prox = clamp(1 - d / st.radius, 0.25, 1);
-          game.damageEnemy(e, st.damage * prox);
+          game.damageEnemy(e, st.damage * prox, w.id);
         }
       }
       if (game.boss && game.boss.hp > 0) {
         const d = dist(player.x, player.y, game.boss.x, game.boss.y);
         if (d <= st.radius + game.boss.radius) {
           const prox = clamp(1 - d / st.radius, 0.25, 1);
-          game.hitBoss(st.damage * prox);
+          game.hitBoss(st.damage * prox, w.id);
         }
       }
       if (st.heal > 0) {
@@ -217,7 +217,7 @@ function fireWeapon(game, w, st) {
           vx: Math.cos(a) * st.projectileSpeed, vy: Math.sin(a) * st.projectileSpeed,
           radius: 8, damage: st.damage, pierce: 0,
           lifetime: st.lifetime, color: "#b56bff", kind: "plasma",
-          speed: st.projectileSpeed, bounces: st.bounces, bounceBonus: st.bounceBonus,
+          speed: st.projectileSpeed, bounces: st.bounces, bounceBonus: st.bounceBonus, weaponId: w.id,
         }));
       }
       game.audio.play("shoot");
@@ -241,7 +241,7 @@ function updateBlades(game, w, st, dt) {
       const rr = st.bladeRadius + e.radius;
       if (dist2(bx, by, e.x, e.y) < rr * rr) {
         e.lastBladeHit = now + 0.4;
-        game.damageEnemy(e, st.damage);
+        game.damageEnemy(e, st.damage, w.id);
       }
     }
     const boss = game.boss;
@@ -249,7 +249,7 @@ function updateBlades(game, w, st, dt) {
       const rr = st.bladeRadius + boss.radius;
       if (dist2(bx, by, boss.x, boss.y) < rr * rr) {
         boss.lastBladeHit = now + 0.4;
-        game.hitBoss(st.damage);
+        game.hitBoss(st.damage, w.id);
       }
     }
   }
@@ -268,11 +268,11 @@ function nearestNEnemies(game, x, y, n, maxDist) {
   return result;
 }
 
-function strikeEnemy(game, e, damage, aoeRadius, chainCount, struck, depth) {
+function strikeEnemy(game, e, damage, aoeRadius, chainCount, struck, depth, sourceId) {
   if (struck.has(e.id)) return;
   struck.add(e.id);
-  if (e.id === "boss") game.hitBoss(damage);
-  else game.damageEnemy(e, damage);
+  if (e.id === "boss") game.hitBoss(damage, sourceId);
+  else game.damageEnemy(e, damage, sourceId);
   game.addLightningBolt(e.x, e.y - 420, e.x, e.y);
   Particles.burst(e.x, e.y, "#ffe9a8", 6, 140, 3);
   if (e.hp > 0 && chainCount > 0 && depth < 3) {
@@ -284,7 +284,7 @@ function strikeEnemy(game, e, damage, aoeRadius, chainCount, struck, depth) {
       if (d < bestD) { bestD = d; next = c; }
     }
     if (next) {
-      strikeEnemy(game, next, damage * 0.7, aoeRadius, chainCount - 1, struck, depth + 1);
+      strikeEnemy(game, next, damage * 0.7, aoeRadius, chainCount - 1, struck, depth + 1, sourceId);
     }
   }
 }

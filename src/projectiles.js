@@ -24,6 +24,7 @@ class Projectile {
     this.speed = 0;
     this.bounces = 0;
     this.bounceBonus = 0;
+    this.weaponId = null;
   }
 
   reset(props) {
@@ -52,6 +53,7 @@ class Projectile {
     this.speed = props.speed || Math.hypot(this.vx, this.vy) || 0;
     this.bounces = props.bounces || 0;
     this.bounceBonus = props.bounceBonus || 0;
+    this.weaponId = props.weaponId || null;
   }
 }
 
@@ -117,7 +119,7 @@ function updateProjectiles(game, dt) {
 
     if (p.age >= p.lifetime) {
       if (p.kind === "fireball" && p.friendly) {
-        game.explode(p.x, p.y, p.explosionRadius, p.damage);
+        game.explode(p.x, p.y, p.explosionRadius, p.damage, p.weaponId);
       }
       p.active = false;
     }
