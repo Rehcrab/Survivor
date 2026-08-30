@@ -62,6 +62,8 @@ function spawnAtRandomEdge(game, type, elite) {
 }
 
 function updateSpawner(game, dt) {
+  if (game.boss) return;
+
   game.spawnTimer -= dt;
 
   if (game.spawnTimer <= 0) {

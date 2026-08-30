@@ -20,7 +20,7 @@ const CONFIG = {
   },
 
   heal: {
-    amount: 25,
+    amount: 45,
     radius: 11,
     spawnMin: 60,
     spawnMax: 90,
@@ -33,6 +33,12 @@ const CONFIG = {
     burstSpeed: 1600,
     spawnMin: 90,
     spawnMax: 140,
+  },
+
+  bossArena: {
+    cageRadius: 480,
+    chestCrystals: 4,
+    crystalValue: 100,
   },
 
   arena: {
@@ -81,7 +87,7 @@ const CONFIG = {
         { damage: 48, cooldown: 750, projectileSpeed: 560, projectileCount: 3, pierce: 1, projectileRadius: 6 },
         { damage: 72, cooldown: 750, projectileSpeed: 560, projectileCount: 3, pierce: 2, projectileRadius: 7 },
       ],
-      upgradeText: ["", "+50% damage", "+1 projectile", "Pierce +1 enemy", "+1 projectile", "MAJOR: +50% damage & +1 pierce"],
+      upgradeText: ["", "+50% damage", "+1 projectile", "Pierce +1 enemy", "+1 projectile", "+50% damage & +1 pierce"],
     },
     fireball: {
       name: "Fireball",
@@ -96,7 +102,7 @@ const CONFIG = {
         { damage: 42, cooldown: 1100, projectileSpeed: 300, projectileCount: 2, pierce: 0, projectileRadius: 9, explosionRadius: 105 },
         { damage: 62, cooldown: 1100, projectileSpeed: 300, projectileCount: 2, pierce: 0, projectileRadius: 11, explosionRadius: 165 },
       ],
-      upgradeText: ["", "+50% explosion radius", "+40% damage", "+1 fireball", "+20% attack speed", "MAJOR: +50% damage & +55% radius"],
+      upgradeText: ["", "+50% explosion radius", "+40% damage", "+1 fireball", "+20% attack speed", "+50% damage & +55% radius"],
     },
     blades: {
       name: "Orbiting Blades",
@@ -104,14 +110,14 @@ const CONFIG = {
       maxLevel: 6,
       description: "Blades orbit you, damaging enemies on contact.",
       levels: [
-        { bladeCount: 3, damage: 18, orbitRadius: 85, rotationSpeed: 3.2, bladeRadius: 18 },
-        { bladeCount: 4, damage: 18, orbitRadius: 85, rotationSpeed: 3.2, bladeRadius: 18 },
-        { bladeCount: 4, damage: 28, orbitRadius: 85, rotationSpeed: 3.2, bladeRadius: 18 },
-        { bladeCount: 4, damage: 28, orbitRadius: 105, rotationSpeed: 3.2, bladeRadius: 22 },
-        { bladeCount: 5, damage: 28, orbitRadius: 105, rotationSpeed: 4.2, bladeRadius: 22 },
-        { bladeCount: 6, damage: 44, orbitRadius: 105, rotationSpeed: 4.6, bladeRadius: 28 },
+        { bladeCount: 3, damage: 18, orbitRadius: 85, rotationSpeed: 3.8, bladeRadius: 18 },
+        { bladeCount: 4, damage: 18, orbitRadius: 85, rotationSpeed: 4.4, bladeRadius: 18 },
+        { bladeCount: 4, damage: 28, orbitRadius: 85, rotationSpeed: 4.4, bladeRadius: 18 },
+        { bladeCount: 4, damage: 28, orbitRadius: 105, rotationSpeed: 4.4, bladeRadius: 22 },
+        { bladeCount: 5, damage: 28, orbitRadius: 105, rotationSpeed: 5.4, bladeRadius: 22 },
+        { bladeCount: 6, damage: 44, orbitRadius: 105, rotationSpeed: 5.8, bladeRadius: 28 },
       ],
-      upgradeText: ["", "+1 blade", "+55% damage", "+25% orbit & blade size", "+1 blade & faster spin", "MAJOR: +55% damage, +1 blade & larger"],
+      upgradeText: ["", "+1 blade & faster spin", "+55% damage", "+25% orbit & blade size", "+1 blade & faster spin", "+55% damage, +1 blade & larger"],
     },
     lightning: {
       name: "Lightning",
@@ -141,7 +147,7 @@ const CONFIG = {
         { damage: 34, cooldown: 1600, projectileCount: 2, pierce: 4, projectileRadius: 14, projectileSpeed: 520, range: 420 },
         { damage: 48, cooldown: 1600, projectileCount: 2, pierce: 10, projectileRadius: 14, projectileSpeed: 520, range: 420 },
       ],
-      upgradeText: ["", "+35% damage", "+1 boomerang", "+40% size", "+25% speed", "MAJOR: +40% damage & +6 pierce"],
+      upgradeText: ["", "+35% damage", "+1 boomerang", "+40% size", "+25% speed", "+40% damage & +6 pierce"],
     },
     nova: {
       name: "Nova",

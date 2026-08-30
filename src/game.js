@@ -16,9 +16,11 @@ class Game {
     this.gems = [];
     this.heals = [];
     this.magnets = [];
+    this.chests = [];
     this.lightningBolts = [];
     this.boss = null;
     this.bossWarning = 0;
+    this.cage = null;
 
     this.spawnTimer = 1;
     this.swarmTimer = 12;
@@ -26,6 +28,19 @@ class Game {
     this.magnetTimer = 100;
     this.magnetBurst = 0;
     this.spawnRadius = 600;
+
+    this.chestRewards = [];
+    this.chestFallback = 0;
+    this.chestSegments = [];
+    this.chestSpin = 0;
+    this.chestRotation = 0;
+    this.chestSpinFrom = 0;
+    this.chestSpinTo = 0;
+    this.chestSpinTime = 0;
+    this.chestSpinDuration = 1.1;
+    this.chestApplied = [];
+    this.chestDone = false;
+    this.chestDoneTimer = 0;
 
     this.pendingLevelUps = 0;
     this.currentChoices = [];
@@ -65,10 +80,12 @@ class Game {
     this.gems.length = 0;
     this.heals.length = 0;
     this.magnets.length = 0;
+    this.chests.length = 0;
     this.lightningBolts.length = 0;
     Particles.reset();
     this.boss = null;
     this.bossWarning = 0;
+    this.cage = null;
     this.time = 0;
     this.spawnTimer = 1;
     this.swarmTimer = 12;
@@ -216,6 +233,14 @@ class Game {
     });
   }
 
+  dropChest(x, y) {
+    this.chests.push({
+      x: x,
+      y: y,
+      bob: rand(0, Math.PI * 2),
+    });
+  }
+
   healPlayer(amount) {
     const p = this.player;
     const before = p.hp;
@@ -259,6 +284,144 @@ class Game {
         magnets[i] = magnets[magnets.length - 1];
         magnets.pop();
         this.activateMagnet();
+      }
+    }
+  }
+
+  handleChests(dt) {
+    const p = this.player;
+    const chests = this.chests;
+    for (let i = chests.length - 1; i >= 0; i--) {
+      const c = chests[i];
+      c.bob += dt;
+      const rr = p.radius + 16;
+      if (dist2(c.x, c.y, p.x, p.y) < rr * rr) {
+        chests[i] = chests[chests.length - 1];
+        chests.pop();
+        this.openChest();
+      }
+    }
+  }
+
+  clampToCage(e) {
+    const c = this.cage;
+    const dx = e.x - c.x, dy = e.y - c.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    const max = c.radius - e.radius;
+    if (d > max) {
+      const s = max / d;
+      e.x = c.x + dx * s;
+      e.y = c.y + dy * s;
+    }
+  }
+
+  eligibleItems() {
+    const items = [];
+    for (const w of this.player.weapons) {
+      const def = weaponDef(w.id);
+      if (w.level < def.maxLevel) {
+        items.push({ type: "weapon", id: w.id, level: w.level, maxLevel: def.maxLevel });
+      }
+    }
+    for (const s of this.player.passives) {
+      const def = skillDef(s.id);
+      if (s.level < def.maxLevel) {
+        items.push({ type: "skill", id: s.id, level: s.level, maxLevel: def.maxLevel });
+      }
+    }
+    return items;
+  }
+
+  openChest() {
+    const eligible = this.eligibleItems();
+    if (eligible.length === 0) {
+      for (let i = 0; i < 4; i++) {
+        this.dropGem(this.player.x + rand(-60, 60), this.player.y + rand(-60, 60), CONFIG.bossArena.crystalValue);
+      }
+      Particles.burst(this.player.x, this.player.y, "#ffd166", 20, 200, 4);
+      this.audio.play("levelup");
+      return;
+    }
+
+    const rewards = [];
+    const pool = eligible.slice();
+    while (rewards.length < 3 && pool.length > 0) {
+      const idx = Math.floor(Math.random() * pool.length);
+      rewards.push(pool.splice(idx, 1)[0]);
+    }
+
+    this.chestRewards = rewards;
+    this.chestFallback = 3 - rewards.length;
+    this.chestSegments = eligible;
+    this.chestSpin = 0;
+    this.chestRotation = 0;
+    this.chestApplied = [];
+    this.chestDone = false;
+    this.chestDoneTimer = 0;
+    this.startChestSpin(rewards[0], eligible);
+    this.state = "CHEST";
+    this.audio.play("levelup");
+  }
+
+  startChestSpin(reward, segments) {
+    const idx = segments.indexOf(reward);
+    const segAngle = (idx + 0.5) * (Math.PI * 2 / segments.length);
+    const targetMod = -Math.PI / 2 - segAngle;
+    const currentMod = ((this.chestRotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    let delta = (targetMod - currentMod) % (Math.PI * 2);
+    if (delta < 0) delta += Math.PI * 2;
+    this.chestSpinFrom = this.chestRotation;
+    this.chestSpinTo = this.chestRotation + Math.PI * 2 * 3 + delta;
+    this.chestSpinTime = 0;
+    this.chestSpinDuration = 1.1;
+  }
+
+  applyChestUpgrade(reward) {
+    const p = this.player;
+    if (reward.type === "weapon") {
+      const w = p.weapons.find(w => w.id === reward.id);
+      if (w && w.level < reward.maxLevel) w.level++;
+    } else {
+      const s = p.passives.find(s => s.id === reward.id);
+      if (s && s.level < reward.maxLevel) {
+        s.level++;
+        if (reward.id === "toughness") p.hp = Math.min(p.hp + 30, p.maxHp);
+      }
+    }
+    p.applyMaxHpChange();
+    UI.refreshBuild(this);
+    this.chestApplied.push(reward);
+  }
+
+  updateChest(dt) {
+    this.chestSpinTime += dt;
+    const t = Math.min(this.chestSpinTime / this.chestSpinDuration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    this.chestRotation = this.chestSpinFrom + (this.chestSpinTo - this.chestSpinFrom) * eased;
+
+    if (t >= 1 && !this.chestDone) {
+      const reward = this.chestRewards[this.chestSpin];
+      if (reward) {
+        this.applyChestUpgrade(reward);
+        this.chestSpin++;
+        if (this.chestSpin < this.chestRewards.length) {
+          this.startChestSpin(this.chestRewards[this.chestSpin], this.chestSegments);
+        } else {
+          this.chestDone = true;
+          this.chestDoneTimer = 2.2;
+        }
+      } else {
+        this.chestDone = true;
+        this.chestDoneTimer = 2.2;
+      }
+    } else if (this.chestDone) {
+      this.chestDoneTimer -= dt;
+      if (this.chestDoneTimer <= 0) {
+        for (let i = 0; i < this.chestFallback; i++) {
+          this.dropGem(this.player.x + rand(-60, 60), this.player.y + rand(-60, 60), CONFIG.bossArena.crystalValue);
+        }
+        this.state = "PLAYING";
+        UI.hideAll();
       }
     }
   }
@@ -328,8 +491,14 @@ class Game {
 
   spawnBoss(type) {
     const boss = createBoss(type, this.time);
-    boss.placeNear(this);
+    const cageRadius = Math.min(CONFIG.bossArena.cageRadius, Math.max(300, Math.min(this.screenW, this.screenH) * 0.55));
+    const a = Math.random() * Math.PI * 2;
+    const d = cageRadius * 0.5;
+    boss.x = this.player.x + Math.cos(a) * d;
+    boss.y = this.player.y + Math.sin(a) * d;
     this.boss = boss;
+    this.enemies.length = 0;
+    this.cage = { x: this.player.x, y: this.player.y, radius: cageRadius };
     this.bossWarning = 2.2;
     this.audio.play("bossSpawn");
     this.addShake(8);
@@ -337,10 +506,11 @@ class Game {
 
   killBoss() {
     const boss = this.boss;
-    this.dropGem(boss.x, boss.y, boss.xp);
-    for (let i = 0; i < 6; i++) {
-      this.dropGem(boss.x + rand(-60, 60), boss.y + rand(-60, 60), 15);
+    const per = Math.round(boss.xp / 3);
+    for (let i = 0; i < CONFIG.bossArena.chestCrystals; i++) {
+      this.dropGem(boss.x + rand(-70, 70), boss.y + rand(-70, 70), per);
     }
+    this.dropChest(boss.x, boss.y);
     Particles.burst(boss.x, boss.y, boss.color, 40, 320, 6);
     Particles.ring(boss.x, boss.y, boss.color, boss.radius * 3, 0.5, 6);
     this.addShake(12);
@@ -348,6 +518,7 @@ class Game {
     this.stats.bossesKilled++;
     const isFinal = boss.name === "Void Tyrant";
     this.boss = null;
+    this.cage = null;
     if (isFinal) {
       this.endRun(true);
     }
@@ -384,6 +555,7 @@ class Game {
 
     const move = Input.getMoveVector();
     p.move(dt, move);
+    if (this.cage) this.clampToCage(p);
 
     if (p.invulnTimer > 0) p.invulnTimer -= dt;
 
@@ -393,6 +565,7 @@ class Game {
 
     if (this.boss) {
       this.boss.update(this, dt);
+      if (this.cage) this.clampToCage(this.boss);
       if (dist(p.x, p.y, this.boss.x, this.boss.y) < this.boss.radius + p.radius) {
         this.hitPlayer(this.boss.damage);
       }
@@ -408,6 +581,8 @@ class Game {
     this.handleGems(dt);
     this.handleHeals(dt);
     this.handleMagnets(dt);
+    this.handleChests(dt);
+    if (this.state !== "PLAYING") return;
     if (this.magnetBurst > 0) this.magnetBurst -= dt;
     this.updatePickupSpawning(dt);
 
@@ -587,6 +762,9 @@ class Game {
       this.updatePlaying(dt);
     } else if (this.state === "LEVEL_UP" || this.state === "PAUSED") {
       Particles.update(dt);
+    } else if (this.state === "CHEST") {
+      this.updateChest(dt);
+      Particles.update(dt);
     }
   }
 
@@ -604,6 +782,7 @@ class Game {
     ctx.translate(halfW - this.camera.x + ox, halfH - this.camera.y + oy);
 
     this.drawBackground(ctx, halfW, halfH);
+    if (this.cage) this.drawCage(ctx);
 
     for (const g of this.gems) this.drawGem(ctx, g);
     for (const h of this.heals) {
@@ -611,6 +790,9 @@ class Game {
     }
     for (const m of this.magnets) {
       if (this.inView(m.x, m.y, halfW, halfH)) this.drawMagnet(ctx, m);
+    }
+    for (const c of this.chests) {
+      if (this.inView(c.x, c.y, halfW, halfH)) this.drawChest(ctx, c);
     }
     for (const e of this.enemies) {
       if (this.inView(e.x, e.y, halfW, halfH)) drawEnemy(ctx, e);
@@ -630,6 +812,10 @@ class Game {
       ctx.textAlign = "center";
       ctx.fillText("⚠ WARNING ⚠", this.screenW / 2, this.screenH * 0.3);
       ctx.globalAlpha = 1;
+    }
+
+    if (this.state === "CHEST") {
+      this.drawChestWheel(ctx);
     }
   }
 
@@ -727,6 +913,115 @@ class Game {
     ctx.arc(r * 0.7, r * 0.55, r * 0.22, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+  }
+
+  drawChest(ctx, c) {
+    const bob = Math.sin(c.bob * 3) * 1.5;
+    const y = c.y + bob;
+    const s = 13;
+    ctx.save();
+    ctx.translate(c.x, y);
+    ctx.shadowColor = "#ffd166";
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = "#e8a33d";
+    ctx.fillRect(-s, -s * 0.55, s * 2, s * 0.85);
+    ctx.fillStyle = "#b06a22";
+    ctx.fillRect(-s, -s * 0.05, s * 2, s * 1.15);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#ffd166";
+    ctx.fillRect(-s * 0.22, -s * 0.05, s * 0.44, s * 1.15);
+    ctx.fillStyle = "#7a4311";
+    ctx.fillRect(-s * 0.12, s * 0.1, s * 0.24, s * 0.3);
+    ctx.restore();
+  }
+
+  drawCage(ctx) {
+    const c = this.cage;
+    ctx.fillStyle = "rgba(255, 77, 141, 0.04)";
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 77, 141, 0.65)";
+    ctx.lineWidth = 6;
+    ctx.setLineDash([22, 16]);
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(255, 77, 141, 0.25)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  drawChestWheel(ctx) {
+    const w = this.screenW, h = this.screenH;
+    ctx.fillStyle = "rgba(5, 6, 12, 0.78)";
+    ctx.fillRect(0, 0, w, h);
+
+    const cx = w / 2, cy = h / 2 - 24;
+    const R = Math.min(w, h) * 0.3;
+    const segs = this.chestSegments;
+    const n = segs.length || 1;
+    const seg = (Math.PI * 2) / n;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this.chestRotation);
+    for (let i = 0; i < n; i++) {
+      const a0 = i * seg;
+      ctx.fillStyle = i % 2 === 0 ? "#283250" : "#3a2a52";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, R, a0, a0 + seg);
+      ctx.closePath();
+      ctx.fill();
+      const item = segs[i];
+      const def = item.type === "weapon" ? weaponDef(item.id) : skillDef(item.id);
+      ctx.save();
+      ctx.rotate(a0 + seg / 2);
+      ctx.font = Math.max(18, R / n) + "px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(def.icon, R * 0.62, 0);
+      ctx.restore();
+    }
+    ctx.strokeStyle = "#ffd166";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = "#ffd166";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - R - 30);
+    ctx.lineTo(cx - 15, cy - R - 6);
+    ctx.lineTo(cx + 15, cy - R - 6);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#ffd166";
+    ctx.font = "bold 30px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("TREASURE CHEST!", cx, cy - R - 46);
+
+    let ry = cy + R + 34;
+    for (const reward of this.chestApplied) {
+      const def = reward.type === "weapon" ? weaponDef(reward.id) : skillDef(reward.id);
+      ctx.fillStyle = "#8ff0ff";
+      ctx.font = "bold 20px system-ui, sans-serif";
+      ctx.fillText(def.icon + " " + def.name + "  →  Lv." + (reward.level + 1), cx, ry);
+      ry += 28;
+    }
+    if (this.chestDone) {
+      ctx.fillStyle = "#e8ecf8";
+      ctx.font = "16px system-ui, sans-serif";
+      ctx.fillText("Continue...", cx, ry + 8);
+    }
   }
 
   drawProjectiles(ctx, halfW, halfH) {
