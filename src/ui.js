@@ -78,6 +78,7 @@ const UI = {
   },
 
   hideAll() {
+    this.hideTooltip();
     ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop"].forEach(id => {
       this.el[id].classList.add("hidden");
     });
@@ -264,6 +265,7 @@ const UI = {
 
   populatePauseBuild(game) {
     this.syncSettings();
+    this.hideTooltip();
     const wc = this.el["pause-weapons"];
     const pc = this.el["pause-passives"];
     wc.innerHTML = "";
