@@ -4,6 +4,7 @@ function createWeapon(id) {
     level: 1,
     cooldown: 0,
     angle: 0,
+    evolved: false,
   };
 }
 
@@ -12,17 +13,26 @@ function weaponStats(id, level) {
   return def.levels[Math.min(level, def.maxLevel) - 1];
 }
 
-function effectiveStats(game, id, level) {
-  const base = weaponStats(id, level);
+function effectiveStats(game, w) {
+  const base = weaponStats(w.id, w.level);
   const p = game.player;
   const rm = p.rangeMult;
   const sm = p.sizeMult;
-  if (rm === 1 && sm === 1) return base;
-  const out = Object.assign({}, base);
-  const rangeFields = ["explosionRadius", "radius", "orbitRadius", "aoeRadius", "range"];
-  const sizeFields = ["projectileRadius", "bladeRadius"];
-  for (const f of rangeFields) if (out[f] !== undefined) out[f] *= rm;
-  for (const f of sizeFields) if (out[f] !== undefined) out[f] *= sm;
+  let out = base;
+  if (rm !== 1 || sm !== 1) {
+    out = Object.assign({}, base);
+    const rangeFields = ["explosionRadius", "radius", "orbitRadius", "aoeRadius", "range"];
+    const sizeFields = ["projectileRadius", "bladeRadius"];
+    for (const f of rangeFields) if (out[f] !== undefined) out[f] *= rm;
+    for (const f of sizeFields) if (out[f] !== undefined) out[f] *= sm;
+  }
+  if (w.evolved) {
+    const evo = CONFIG.weapons[w.id].evo;
+    if (evo && evo.stats) {
+      if (out === base) out = Object.assign({}, base);
+      for (const k in evo.stats) out[k] = evo.stats[k];
+    }
+  }
   return out;
 }
 
@@ -56,7 +66,7 @@ function updateWeapons(game, dt) {
   const player = game.player;
   for (let i = 0; i < player.weapons.length; i++) {
     const w = player.weapons[i];
-    const st = effectiveStats(game, w.id, w.level);
+    const st = effectiveStats(game, w);
 
     if (w.id === "blades") {
       w.angle += st.rotationSpeed * dt;
@@ -240,7 +250,7 @@ function updateBlades(game, w, st, dt) {
       if (now < e.lastBladeHit) continue;
       const rr = st.bladeRadius + e.radius;
       if (dist2(bx, by, e.x, e.y) < rr * rr) {
-        e.lastBladeHit = now + 0.4;
+        e.lastBladeHit = now + 0.15;
         game.damageEnemy(e, st.damage, w.id);
       }
     }
@@ -248,7 +258,7 @@ function updateBlades(game, w, st, dt) {
     if (boss && boss.hp > 0 && now >= boss.lastBladeHit) {
       const rr = st.bladeRadius + boss.radius;
       if (dist2(bx, by, boss.x, boss.y) < rr * rr) {
-        boss.lastBladeHit = now + 0.4;
+        boss.lastBladeHit = now + 0.15;
         game.hitBoss(st.damage, w.id);
       }
     }

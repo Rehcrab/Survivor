@@ -41,6 +41,7 @@ const CONFIG = {
     crystalValue: 100,
     bossHealsMin: 1,
     bossHealsMax: 2,
+    minionHpMult: 3,
   },
 
   gold: {
@@ -103,6 +104,7 @@ const CONFIG = {
         { damage: 72, cooldown: 750, projectileSpeed: 560, projectileCount: 3, pierce: 2, projectileRadius: 7 },
       ],
       upgradeText: ["", "+50% damage", "+1 projectile", "Pierce +1 enemy", "+1 projectile", "+50% damage & +1 pierce"],
+      evo: { requires: "critical_focus", name: "Astral Bolts", icon: "🌠", description: "Magic Bolt evolves into piercing astral bolts.", stats: { damage: 96, projectileCount: 4, pierce: 3, projectileRadius: 9 } },
     },
     fireball: {
       name: "Fireball",
@@ -118,6 +120,7 @@ const CONFIG = {
         { damage: 62, cooldown: 1100, projectileSpeed: 300, projectileCount: 2, pierce: 0, projectileRadius: 11, explosionRadius: 165 },
       ],
       upgradeText: ["", "+50% explosion radius", "+40% damage", "+1 fireball", "+20% attack speed", "+50% damage & +55% radius"],
+      evo: { requires: "amplify", name: "Meteor Storm", icon: "☄️", description: "Fireball evolves into devastating meteors.", stats: { damage: 100, projectileCount: 3, explosionRadius: 230, projectileRadius: 13 } },
     },
     blades: {
       name: "Orbiting Blades",
@@ -133,6 +136,7 @@ const CONFIG = {
         { bladeCount: 6, damage: 44, orbitRadius: 105, rotationSpeed: 5.8, bladeRadius: 34 },
       ],
       upgradeText: ["", "+1 blade & faster spin", "+55% damage", "+25% orbit & blade size", "+1 blade & faster spin", "+55% damage, +1 blade & larger"],
+      evo: { requires: "overdrive", name: "Vortex", icon: "🌀", description: "Blades evolve into a razor vortex.", stats: { bladeCount: 8, damage: 75, rotationSpeed: 7.2, bladeRadius: 40 } },
     },
     lightning: {
       name: "Lightning",
@@ -148,6 +152,7 @@ const CONFIG = {
         { damage: 150, cooldown: 1500, strikeCount: 3, aoeRadius: 80, chainCount: 1 },
       ],
       upgradeText: ["", "+1 strike", "+35% damage", "Chains to +1 enemy", "-25% cooldown", "+1 strike & +35% damage"],
+      evo: { requires: "magnet", name: "Stormbringer", icon: "🌩️", description: "Lightning evolves into an unstoppable storm.", stats: { damage: 260, strikeCount: 5, chainCount: 3, cooldown: 1200, aoeRadius: 90 } },
     },
     boomerang: {
       name: "Boomerang",
@@ -163,6 +168,7 @@ const CONFIG = {
         { damage: 60, cooldown: 1500, projectileCount: 2, pierce: 10, projectileRadius: 15, projectileSpeed: 560, range: 460 },
       ],
       upgradeText: ["", "+40% damage", "+1 boomerang", "+50% size", "+20% speed", "+45% damage & +6 pierce"],
+      evo: { requires: "swift_feet", name: "Glaive Storm", icon: "🗡️", description: "Boomerang evolves into a storm of glaives.", stats: { damage: 95, projectileCount: 4, pierce: 20, projectileRadius: 20 } },
     },
     nova: {
       name: "Nova",
@@ -178,6 +184,7 @@ const CONFIG = {
         { damage: 70, cooldown: 1900, radius: 265, knockback: 440 },
       ],
       upgradeText: ["", "+35% radius", "+40% damage", "Knockback", "-25% cooldown", "+30% radius & damage"],
+      evo: { requires: "toughness", name: "Supernova", icon: "💫", description: "Nova evolves into a world-shaking supernova.", stats: { damage: 130, radius: 360, knockback: 620, cooldown: 1400 } },
     },
     aura: {
       name: "Aura",
@@ -193,6 +200,7 @@ const CONFIG = {
         { damage: 30, cooldown: 450, radius: 175, heal: 2 },
       ],
       upgradeText: ["", "+35% radius", "+60% damage", "+25% radius", "+40% damage & heals 1/tick", "+35% damage & heals 2/tick"],
+      evo: { requires: "berserker", name: "Radiance", icon: "✨", description: "Aura evolves into a burning radiance.", stats: { damage: 55, radius: 240, heal: 4, cooldown: 400 } },
     },
     deflector: {
       name: "Deflector",
@@ -200,14 +208,15 @@ const CONFIG = {
       maxLevel: 6,
       description: "Periodically clears enemy projectiles near you.",
       levels: [
-        { cooldown: 3500, radius: 140, maxClear: 3 },
-        { cooldown: 3500, radius: 180, maxClear: 3 },
-        { cooldown: 3500, radius: 180, maxClear: 5 },
-        { cooldown: 2800, radius: 180, maxClear: 5 },
-        { cooldown: 2800, radius: 220, maxClear: 7 },
-        { cooldown: 2200, radius: 220, maxClear: 10 },
+        { cooldown: 1800, radius: 170, maxClear: 5 },
+        { cooldown: 1800, radius: 220, maxClear: 5 },
+        { cooldown: 1800, radius: 220, maxClear: 8 },
+        { cooldown: 1400, radius: 220, maxClear: 8 },
+        { cooldown: 1400, radius: 260, maxClear: 11 },
+        { cooldown: 1000, radius: 260, maxClear: 15 },
       ],
-      upgradeText: ["", "+30% radius", "+2 projectiles cleared", "-20% cooldown", "+40% radius & +2 cleared", "-20% cooldown & +3 cleared"],
+      upgradeText: ["", "+30% radius", "+3 projectiles cleared", "-22% cooldown", "+18% radius & +3 cleared", "-29% cooldown & +4 cleared"],
+      evo: { requires: "growth", name: "Null Field", icon: "❄️", description: "Deflector evolves into an absolute null field.", stats: { cooldown: 800, radius: 300, maxClear: 25 } },
     },
     plasma: {
       name: "Plasma Orb",
@@ -223,6 +232,7 @@ const CONFIG = {
         { damage: 30, cooldown: 1500, projectileCount: 1, bounces: 7, bounceBonus: 12, projectileSpeed: 340, lifetime: 4 },
       ],
       upgradeText: ["", "+1 bounce", "+45% damage", "+4 bounce damage", "+2 bounces & faster", "+50% damage & +4 bounce damage"],
+      evo: { requires: "critical_focus", name: "Plasma Storm", icon: "🌌", description: "Plasma evolves into a raging storm of orbs.", stats: { damage: 55, bounces: 10, bounceBonus: 20, lifetime: 5 } },
     },
   },
 
@@ -270,15 +280,30 @@ const CONFIG = {
   },
 
   bosses: {
-    mid: {
-      name: "Ruins Warden", radius: 46, hp: 2700, speed: 75, damage: 26, xp: 300, color: "#ff4d8d",
+    warden: {
+      name: "Ruins Warden", radius: 46, hp: 4500, speed: 75, damage: 26, xp: 400, color: "#ff4d8d", tier: 1,
       attacks: { burst: true, charge: true, summon: true },
     },
-    final: {
-      name: "Void Tyrant", radius: 58, hp: 10000, speed: 90, damage: 32, xp: 900, color: "#b04dff",
+    tyrant: {
+      name: "Void Tyrant", radius: 54, hp: 9000, speed: 85, damage: 32, xp: 600, color: "#b04dff", tier: 2,
+      attacks: { burst: true, charge: true, summon: true },
+    },
+    leviathan: {
+      name: "Abyss Leviathan", radius: 62, hp: 16000, speed: 80, damage: 38, xp: 900, color: "#3dd0c0", tier: 3,
+      attacks: { burst: true, charge: true, summon: true },
+    },
+    overlord: {
+      name: "Void Overlord", radius: 70, hp: 26000, speed: 95, damage: 44, xp: 1200, color: "#ff3d8d", tier: 4, final: true,
       attacks: { burst: true, charge: true, summon: true },
     },
   },
+
+  bossSchedule: [
+    { time: 300, type: "warden" },
+    { time: 600, type: "tyrant" },
+    { time: 900, type: "leviathan" },
+    { time: 1200, type: "overlord" },
+  ],
 };
 
 function xpForLevel(level) {

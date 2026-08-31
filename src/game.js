@@ -47,8 +47,7 @@ class Game {
     this.pendingLevelUps = 0;
     this.currentChoices = [];
 
-    this.midBossSpawned = false;
-    this.finalBossSpawned = false;
+    this.bossIndex = 0;
 
     this.stats = {};
     this.weaponDamage = {};
@@ -99,8 +98,7 @@ class Game {
     this.magnetBurst = 0;
     this.pendingLevelUps = 0;
     this.currentChoices = [];
-    this.midBossSpawned = false;
-    this.finalBossSpawned = false;
+    this.bossIndex = 0;
     this.resetStats();
     this.weaponDamage = {};
     this.lastRunGold = 0;
@@ -569,7 +567,7 @@ class Game {
     for (let i = 0; i < heals; i++) {
       this.dropHeal(boss.x + rand(-50, 50), boss.y + rand(-50, 50), CONFIG.heal.amount);
     }
-    const isFinalBoss = boss.name === "Void Tyrant";
+    const isFinalBoss = boss.final === true;
     const goldTotal = isFinalBoss ? CONFIG.gold.bossAmountFinal : CONFIG.gold.bossAmountMid;
     if (isFinalBoss) {
       Settings.gold += goldTotal;
@@ -586,7 +584,7 @@ class Game {
     this.addShake(12);
     this.audio.play("bossDie");
     this.stats.bossesKilled++;
-    const isFinal = boss.name === "Void Tyrant";
+    const isFinal = boss.final === true;
     this.boss = null;
     this.cage = null;
     if (isFinal) {
@@ -668,13 +666,10 @@ class Game {
       }
     }
 
-    if (!this.midBossSpawned && this.time >= 300) {
-      this.midBossSpawned = true;
-      this.spawnBoss("mid");
-    }
-    if (!this.finalBossSpawned && this.time >= 600) {
-      this.finalBossSpawned = true;
-      this.spawnBoss("final");
+    const schedule = CONFIG.bossSchedule;
+    while (this.bossIndex < schedule.length && this.time >= schedule[this.bossIndex].time) {
+      this.spawnBoss(schedule[this.bossIndex].type);
+      this.bossIndex++;
     }
 
     this.checkLevelUp();
@@ -1235,7 +1230,7 @@ class Game {
 
     for (const w of p.weapons) {
       if (w.id === "aura") {
-        const st = effectiveStats(this, w.id, w.level);
+        const st = effectiveStats(this, w);
         const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, st.radius);
         grad.addColorStop(0, "rgba(93, 255, 154, 0.30)");
         grad.addColorStop(0.6, "rgba(93, 255, 154, 0.13)");
@@ -1282,7 +1277,7 @@ class Game {
 
     for (const w of p.weapons) {
       if (w.id === "blades") {
-        const st = effectiveStats(this, w.id, w.level);
+        const st = effectiveStats(this, w);
         for (let i = 0; i < st.bladeCount; i++) {
           const a = w.angle + (i / st.bladeCount) * Math.PI * 2;
           const bx = p.x + Math.cos(a) * st.orbitRadius;

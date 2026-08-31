@@ -12,6 +12,13 @@ function generateChoices(player) {
     }
   }
 
+  for (const w of player.weapons) {
+    const def = weaponDef(w.id);
+    if (def.evo && w.level >= def.maxLevel && !w.evolved && player.skillLevel(def.evo.requires) > 0) {
+      candidates.push({ type: "evo", id: w.id, weight: 6 });
+    }
+  }
+
   for (const s of player.passives) {
     const def = skillDef(s.id);
     if (s.level < def.maxLevel) {
@@ -56,6 +63,9 @@ function generateChoices(player) {
 }
 
 function enrichChoice(player, c) {
+  if (c.type === "evo") {
+    return { type: "evo", id: c.id, isNew: false };
+  }
   if (c.isNew) {
     return { type: c.type, id: c.id, isNew: true, currentLevel: 0, nextLevel: 1 };
   }
@@ -71,7 +81,10 @@ function enrichChoice(player, c) {
 
 function applyUpgrade(game, choice) {
   const player = game.player;
-  if (choice.type === "weapon") {
+  if (choice.type === "evo") {
+    const w = player.weapons.find(w => w.id === choice.id);
+    if (w) w.evolved = true;
+  } else if (choice.type === "weapon") {
     if (choice.isNew) {
       player.weapons.push(createWeapon(choice.id));
     } else {

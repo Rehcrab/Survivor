@@ -132,10 +132,17 @@ const UI = {
     container.innerHTML = "";
     choices.forEach((c, i) => {
       const card = document.createElement("div");
-      card.className = "upgrade-card";
+      card.className = "upgrade-card" + (c.type === "evo" ? " evo-card" : "");
 
       let icon, name, levelText, desc;
-      if (c.type === "weapon") {
+      if (c.type === "evo") {
+        const def = weaponDef(c.id);
+        const evo = def.evo;
+        icon = evo.icon;
+        name = evo.name;
+        levelText = "EVOLUTION · " + def.name;
+        desc = evo.description;
+      } else if (c.type === "weapon") {
         const def = weaponDef(c.id);
         icon = def.icon;
         name = def.name;
@@ -182,10 +189,13 @@ const UI = {
     }
   },
 
-  weaponTip(id, level, dmg, pct) {
+  weaponTip(id, level, dmg, pct, evolved) {
     const def = weaponDef(id);
     let html = '<div class="tip-name">' + def.icon + " " + def.name + "</div>";
     html += '<div class="tip-level">Level ' + level + " / " + def.maxLevel + "</div>";
+    if (evolved && def.evo) {
+      html += '<div class="tip-evo">' + def.evo.icon + " " + def.evo.name + "</div>";
+    }
     if (dmg != null) {
       html += '<div class="tip-damage">' + Math.round(dmg) + " damage · " + pct + "%</div>";
     }
@@ -229,6 +239,7 @@ const UI = {
   },
 
   populatePauseBuild(game) {
+    this.syncSettings();
     const wc = this.el["pause-weapons"];
     const pc = this.el["pause-passives"];
     wc.innerHTML = "";
@@ -239,7 +250,7 @@ const UI = {
       const def = weaponDef(w.id);
       const dmg = game.weaponDamage[w.id] || 0;
       const pct = total > 0 ? Math.round(dmg / total * 100) : 0;
-      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level, dmg, pct)));
+      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level, dmg, pct, w.evolved)));
     }
     for (const s of p.passives) {
       const def = skillDef(s.id);
@@ -289,16 +300,38 @@ const UI = {
     document.getElementById("pause-btn").addEventListener("click", () => game.togglePause());
     document.getElementById("speed-btn").addEventListener("click", () => game.cycleSpeed());
 
-    const sound = document.getElementById("set-sound");
-    const music = document.getElementById("set-music");
-    const shake = document.getElementById("set-shake");
-    sound.checked = AudioMan.soundOn;
-    music.checked = AudioMan.musicOn;
-    shake.checked = Settings.shake;
+    this.bindSetting("set-sound", "sound");
+    this.bindSetting("set-music", "music");
+    this.bindSetting("set-shake", "shake");
+    this.bindSetting("pause-set-sound", "sound");
+    this.bindSetting("pause-set-music", "music");
+    this.bindSetting("pause-set-shake", "shake");
+    this.syncSettings();
+  },
 
-    sound.addEventListener("change", () => { AudioMan.setSound(sound.checked); Settings.sound = sound.checked; Settings.save(); });
-    music.addEventListener("change", () => { AudioMan.setMusic(music.checked); Settings.music = music.checked; Settings.save(); });
-    shake.addEventListener("change", () => { Settings.shake = shake.checked; Settings.save(); });
+  bindSetting(id, key) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (key === "sound") el.checked = AudioMan.soundOn;
+    else if (key === "music") el.checked = AudioMan.musicOn;
+    else el.checked = Settings.shake;
+    el.addEventListener("change", () => {
+      if (key === "sound") { AudioMan.setSound(el.checked); Settings.sound = el.checked; }
+      else if (key === "music") { AudioMan.setMusic(el.checked); Settings.music = el.checked; }
+      else { Settings.shake = el.checked; }
+      Settings.save();
+      this.syncSettings();
+    });
+  },
+
+  syncSettings() {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+    set("set-sound", AudioMan.soundOn);
+    set("set-music", AudioMan.musicOn);
+    set("set-shake", Settings.shake);
+    set("pause-set-sound", AudioMan.soundOn);
+    set("pause-set-music", AudioMan.musicOn);
+    set("pause-set-shake", Settings.shake);
   },
 
   updateBestScore() {

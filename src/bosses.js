@@ -12,6 +12,8 @@ class Boss {
     this.damage = cfg.damage;
     this.xp = cfg.xp;
     this.attacks = cfg.attacks;
+    this.final = cfg.final || false;
+    this.tier = cfg.tier || 1;
     this.state = "approach";
     this.stateTimer = 1.0;
     this.pendingAttack = null;
@@ -160,10 +162,9 @@ class Boss {
   }
 
   fireBurst(game) {
-    const isFinal = this.name === "Void Tyrant";
     const ph = this.phase();
-    let count = isFinal ? 14 : 10;
-    let speed = isFinal ? 240 : 200;
+    let count = 8 + this.tier * 3;
+    let speed = 185 + this.tier * 15;
     if (ph === 2) count += 2;
     else if (ph === 3) { count += 4; speed += 30; }
     const dmg = this.getDamage() * 0.5;
@@ -177,16 +178,17 @@ class Boss {
   spawnMinions(game) {
     const ph = this.phase();
     const count = ph === 3 ? 6 : 5;
+    const mult = difficultyMult(game);
+    const hpMult = mult.hp * CONFIG.bossArena.minionHpMult;
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2;
       const x = this.x + Math.cos(a) * (this.radius + 30);
       const y = this.y + Math.sin(a) * (this.radius + 30);
-      const mult = difficultyMult(game);
       let type = "basic";
-      if (ph === 2) type = pick(["basic", "basic", "tank"]);
-      else type = pick(["tank", "tank", "basic"]);
-      const elite = ph === 3 && chance(0.25);
-      game.enemies.push(createEnemy(type, x, y, { hpMult: mult.hp, dmgMult: mult.dmg, speedMult: mult.speed, elite }));
+      if (ph === 2) type = pick(["tank", "tank", "basic"]);
+      else type = pick(["tank", "tank", "tank", "basic"]);
+      const elite = ph === 3 && chance(0.35);
+      game.enemies.push(createEnemy(type, x, y, { hpMult, dmgMult: mult.dmg, speedMult: mult.speed, elite }));
     }
   }
 
