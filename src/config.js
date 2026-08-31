@@ -222,7 +222,7 @@ const CONFIG = {
         { damage: 70, cooldown: 1900, radius: 265, knockback: 440 },
       ],
       upgradeText: ["", "+35% radius", "+40% damage", "Knockback", "-25% cooldown", "+30% radius & damage"],
-      evo: { requires: "toughness", name: "Supernova", icon: "💫", description: "Nova evolves into a world-shaking supernova.", stats: { damage: 130, radius: 360, knockback: 620, cooldown: 1400 } },
+      evo: { requires: "toughness", name: "Supernova", icon: "💫", description: "Nova evolves into a world-shaking supernova.", stats: { damage: 95, radius: 300, knockback: 500, cooldown: 1700 } },
     },
     aura: {
       name: "Aura",
