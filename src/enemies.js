@@ -22,6 +22,7 @@ function createEnemy(type, x, y, opts) {
     xpValue: (base.xp || 5) * (elite ? CONFIG.elite.xpMult : 1),
     color: elite ? CONFIG.elite.color : base.color,
     ranged: !!base.ranged,
+    knockbackResist: elite ? CONFIG.elite.knockbackResist : (base.knockbackResist || 1),
     fireCooldown: base.fireCooldown ? base.fireCooldown / 1000 : 0,
     fireTimer: base.fireCooldown ? (base.fireCooldown / 1000) * rand(0.4, 0.9) : 0,
     projSpeed: base.projSpeed || 0,

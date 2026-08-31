@@ -163,8 +163,9 @@ function fireWeapon(game, w, st) {
           game.damageEnemy(e, st.damage, w.id);
           if (st.knockback > 0 && e.ranged === false) {
             const a = angleTo(player.x, player.y, e.x, e.y);
-            e.kbx += Math.cos(a) * st.knockback;
-            e.kby += Math.sin(a) * st.knockback;
+            const kb = st.knockback * (e.knockbackResist != null ? e.knockbackResist : 1);
+            e.kbx += Math.cos(a) * kb;
+            e.kby += Math.sin(a) * kb;
           }
         }
       }

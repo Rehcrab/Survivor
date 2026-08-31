@@ -114,7 +114,7 @@ const CONFIG = {
   enemies: {
     basic: { name: "Basic", hp: 30, speed: 80, damage: 10, radius: 14, xp: 5, color: "#4ecb6f" },
     runner: { name: "Runner", hp: 20, speed: 172, damage: 8, radius: 12, xp: 6, color: "#ffce4f" },
-    tank: { name: "Tank", hp: 185, speed: 55, damage: 18, radius: 22, xp: 20, color: "#a06bff" },
+    tank: { name: "Tank", hp: 185, speed: 55, damage: 18, radius: 22, xp: 20, color: "#a06bff", knockbackResist: 0.5 },
     ranged: { name: "Ranged", hp: 50, speed: 92, damage: 12, radius: 13, xp: 12, color: "#ff6b6b", ranged: true, fireCooldown: 2200, projSpeed: 240, projDamage: 10 },
     swarm: { name: "Swarm", hp: 12, speed: 112, damage: 5, radius: 9, xp: 3, color: "#ff7ad9" },
   },
@@ -124,6 +124,7 @@ const CONFIG = {
     damageMult: 2,
     radiusMult: 1.35,
     xpMult: 6,
+    knockbackResist: 0.3,
     color: "#ff8a3d",
   },
 
@@ -222,7 +223,7 @@ const CONFIG = {
         { damage: 70, cooldown: 1900, radius: 265, knockback: 440 },
       ],
       upgradeText: ["", "+35% radius", "+40% damage", "Knockback", "-25% cooldown", "+30% radius & damage"],
-      evo: { requires: "toughness", name: "Supernova", icon: "💫", description: "Nova evolves into a world-shaking supernova.", stats: { damage: 95, radius: 300, knockback: 500, cooldown: 1700 } },
+      evo: { requires: "toughness", name: "Supernova", icon: "💫", description: "Nova evolves into a world-shaking supernova.", stats: { damage: 130, radius: 360, knockback: 620, cooldown: 1400 } },
     },
     aura: {
       name: "Aura",
