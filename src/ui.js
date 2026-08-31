@@ -198,14 +198,16 @@ const UI = {
     }
   },
 
-  weaponTip(id, level, dmg, pct, evolved) {
+  weaponTip(id, level, dmg, pct, evolved, cleared) {
     const def = weaponDef(id);
     let html = '<div class="tip-name">' + def.icon + " " + def.name + "</div>";
     html += '<div class="tip-level">Level ' + level + " / " + def.maxLevel + "</div>";
     if (evolved && def.evo) {
       html += '<div class="tip-evo">' + def.evo.icon + " " + def.evo.name + "</div>";
     }
-    if (dmg != null) {
+    if (cleared) {
+      html += '<div class="tip-damage">' + cleared + " projectiles cleared</div>";
+    } else if (dmg != null) {
       html += '<div class="tip-damage">' + Math.round(dmg) + " damage · " + pct + "%</div>";
     }
     html += '<div class="tip-desc">' + def.description + "</div>";
@@ -259,7 +261,8 @@ const UI = {
       const def = weaponDef(w.id);
       const dmg = game.weaponDamage[w.id] || 0;
       const pct = total > 0 ? Math.round(dmg / total * 100) : 0;
-      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level, dmg, pct, w.evolved)));
+      const cleared = game.weaponCleared[w.id] || 0;
+      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level, dmg, pct, w.evolved, cleared)));
     }
     for (const s of p.passives) {
       const def = skillDef(s.id);

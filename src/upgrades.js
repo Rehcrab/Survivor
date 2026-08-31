@@ -89,9 +89,10 @@ function applyOverflow(game, id) {
     case "maxhp": p.overflowHp += 5; p.hp += 5; break;
     case "damage": p.overflowDamage += 0.03; break;
     case "speed": p.overflowSpeed += 0.02; break;
-    case "gold": Settings.gold += 25; Settings.save(); break;
+    case "gold": Settings.gold += 30; Settings.save(); break;
     case "heal": p.hp = p.maxHp; break;
-    case "nuke": game.nuke(); break;
+    case "overload": p.overloadTimer = 10; break;
+    case "timewarp": game.enemySlow = 8; break;
   }
 }
 

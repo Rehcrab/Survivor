@@ -39,6 +39,7 @@ function updateEnemies(game, dt) {
   const arr = game.enemies;
   const player = game.player;
   const now = game.time;
+  const slow = game.enemySlow > 0 ? 0.5 : 1;
   for (let i = 0; i < arr.length; i++) {
     const e = arr[i];
 
@@ -61,8 +62,8 @@ function updateEnemies(game, dt) {
         moveX = -ny;
         moveY = nx;
       }
-      e.x += moveX * e.speed * dt;
-      e.y += moveY * e.speed * dt;
+      e.x += moveX * e.speed * slow * dt;
+      e.y += moveY * e.speed * slow * dt;
 
       e.fireTimer -= dt;
       if (e.fireTimer <= 0 && d < 480) {
@@ -71,8 +72,8 @@ function updateEnemies(game, dt) {
         game.fireEnemyProjectile(e.x, e.y, Math.cos(a), Math.sin(a), e.projSpeed, e.projDamage);
       }
     } else {
-      e.x += nx * e.speed * dt;
-      e.y += ny * e.speed * dt;
+      e.x += nx * e.speed * slow * dt;
+      e.y += ny * e.speed * slow * dt;
     }
 
     if (now - e.lastBladeHit > 5) e.lastBladeHit = 0;

@@ -14,6 +14,7 @@ class Player {
     this.overflowHp = 0;
     this.overflowDamage = 0;
     this.overflowSpeed = 0;
+    this.overloadTimer = 0;
     this.hp = this.maxHp;
   }
 
@@ -77,6 +78,7 @@ class Player {
 
   damageMultiplier() {
     let m = 1 + this.overflowDamage;
+    if (this.overloadTimer > 0) m *= 2;
     if (this.berserkerLevel > 0 && this.hp <= this.maxHp * 0.3) {
       m *= 1 + this.berserkerLevel * 0.2;
     }

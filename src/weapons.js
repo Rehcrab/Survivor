@@ -215,6 +215,7 @@ function fireWeapon(game, w, st) {
         }
       }
       if (cleared > 0) {
+        game.weaponCleared[w.id] = (game.weaponCleared[w.id] || 0) + cleared;
         Particles.ring(player.x, player.y, "#9ad8ff", st.radius, 0.45, 5);
         Particles.burst(player.x, player.y, "#9ad8ff", 8, 120, 3);
         game.audio.play("nova");
@@ -291,9 +292,9 @@ function strikeEnemy(game, e, damage, aoeRadius, chainCount, struck, depth, sour
   else game.damageEnemy(e, damage, sourceId);
   game.addLightningBolt(e.x, e.y - 420, e.x, e.y);
   Particles.burst(e.x, e.y, "#ffe9a8", 6, 140, 3);
-  if (e.hp > 0 && chainCount > 0 && depth < 3) {
+  if (chainCount > 0 && depth < 4) {
     let next = null;
-    let bestD = aoeRadius * 1.5 * (aoeRadius * 1.5);
+    let bestD = aoeRadius * 2 * (aoeRadius * 2);
     for (const c of game.enemies) {
       if (struck.has(c.id)) continue;
       const d = dist2(e.x, e.y, c.x, c.y);

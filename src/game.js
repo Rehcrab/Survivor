@@ -54,6 +54,8 @@ class Game {
 
     this.stats = {};
     this.weaponDamage = {};
+    this.weaponCleared = {};
+    this.enemySlow = 0;
     this.lastRunGold = 0;
     this.resetStats();
   }
@@ -107,6 +109,8 @@ class Game {
     this.endlessBossCount = 0;
     this.resetStats();
     this.weaponDamage = {};
+    this.weaponCleared = {};
+    this.enemySlow = 0;
     this.lastRunGold = 0;
     this.camera.snapTo(this.player.x, this.player.y);
     this.state = "PLAYING";
@@ -573,16 +577,6 @@ class Game {
     this.addShake(8);
   }
 
-  nuke() {
-    const enemies = this.enemies;
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      this.killEnemy(enemies[i]);
-    }
-    Particles.ring(this.player.x, this.player.y, "#ffffff", Math.max(this.screenW, this.screenH), 0.5, 8);
-    this.addShake(10);
-    this.audio.play("nova");
-  }
-
   killBoss() {
     const boss = this.boss;
     const per = Math.round(boss.xp / 3);
@@ -658,6 +652,8 @@ class Game {
     if (this.cage) this.clampToCage(p);
 
     if (p.invulnTimer > 0) p.invulnTimer -= dt;
+    if (p.overloadTimer > 0) p.overloadTimer -= dt;
+    if (this.enemySlow > 0) this.enemySlow -= dt;
 
     updateWeapons(this, dt);
     updateProjectiles(this, dt);
