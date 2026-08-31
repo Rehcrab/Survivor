@@ -138,10 +138,11 @@ function fireWeapon(game, w, st) {
       return true;
     }
     case "boomerang": {
+      const t = nearestEnemy(game, player.x, player.y, 900);
+      if (!t) return false;
       for (let i = 0; i < st.projectileCount; i++) {
-        const base = player.facing;
-        const spread = st.projectileCount > 1 ? (i - (st.projectileCount - 1) / 2) * 0.55 : 0;
-        const a = base + spread;
+        const spread = st.projectileCount > 1 ? (i - (st.projectileCount - 1) / 2) * 0.4 : 0;
+        const a = angleTo(player.x, player.y, t.x, t.y) + spread;
         game.projectiles.push(createProjectile({
           x: player.x, y: player.y,
           vx: Math.cos(a) * st.projectileSpeed, vy: Math.sin(a) * st.projectileSpeed,
