@@ -56,8 +56,10 @@ function spawnEnemy(game, type, x, y, elite) {
 function spawnAtRandomEdge(game, type, elite) {
   const a = Math.random() * Math.PI * 2;
   const r = game.spawnRadius + rand(40, 140);
-  const x = game.player.x + Math.cos(a) * r;
-  const y = game.player.y + Math.sin(a) * r;
+  let x = game.player.x + Math.cos(a) * r;
+  let y = game.player.y + Math.sin(a) * r;
+  x = clamp(x, -game.arenaHalfW + 30, game.arenaHalfW - 30);
+  y = clamp(y, -game.arenaHalfH + 30, game.arenaHalfH - 30);
   spawnEnemy(game, type, x, y, elite);
 }
 
@@ -81,8 +83,8 @@ function updateSpawner(game, dt) {
     game.swarmTimer = 16;
     const a = Math.random() * Math.PI * 2;
     const r = game.spawnRadius + 60;
-    const cx = game.player.x + Math.cos(a) * r;
-    const cy = game.player.y + Math.sin(a) * r;
+    const cx = clamp(game.player.x + Math.cos(a) * r, -game.arenaHalfW + 60, game.arenaHalfW - 60);
+    const cy = clamp(game.player.y + Math.sin(a) * r, -game.arenaHalfH + 60, game.arenaHalfH - 60);
     for (let i = 0; i < 9; i++) {
       const sa = (i / 9) * Math.PI * 2;
       const sx = cx + Math.cos(sa) * 55;

@@ -49,7 +49,7 @@ function createEnemy(type, x, y, opts) {
     shield: 0,
   };
 
-  if (elite) {
+  if (elite && type !== "tank" && chance(CONFIG.elite.modChance)) {
     e.mods = assignEliteMods();
     for (const m of e.mods) {
       if (m === "swift") e.speed *= 1.4;
@@ -107,6 +107,9 @@ function updateEnemies(game, dt) {
       e.x += nx * e.speed * slow * speedMult * dt;
       e.y += ny * e.speed * slow * speedMult * dt;
     }
+
+    e.x = clamp(e.x, -game.arenaHalfW + e.radius, game.arenaHalfW - e.radius);
+    e.y = clamp(e.y, -game.arenaHalfH + e.radius, game.arenaHalfH - e.radius);
 
     if (now - e.lastBladeHit > 5) e.lastBladeHit = 0;
     if (now - e.lastBoomHit > 5) e.lastBoomHit = 0;

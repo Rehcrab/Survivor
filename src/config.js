@@ -97,6 +97,8 @@ const CONFIG = {
 
   arena: {
     gridSize: 90,
+    decorCount: 110,
+    sizeMult: 1.8,
   },
 
   difficulty: {
@@ -125,6 +127,7 @@ const CONFIG = {
     radiusMult: 1.35,
     xpMult: 6,
     knockbackResist: 0.3,
+    modChance: 0.4,
     color: "#ff8a3d",
   },
 

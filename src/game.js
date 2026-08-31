@@ -30,6 +30,9 @@ class Game {
     this.magnetTimer = 100;
     this.magnetBurst = 0;
     this.spawnRadius = 600;
+    this.arenaHalfW = 2000;
+    this.arenaHalfH = 2000;
+    this.decor = [];
 
     this.chestRewards = [];
     this.chestFallback = 0;
@@ -80,6 +83,26 @@ class Game {
     this.canvas.style.width = this.screenW + "px";
     this.canvas.style.height = this.screenH + "px";
     this.spawnRadius = Math.hypot(this.screenW / 2, this.screenH / 2) + 70;
+    this.arenaHalfW = Math.round(this.screenW * CONFIG.arena.sizeMult);
+    this.arenaHalfH = Math.round(this.screenH * CONFIG.arena.sizeMult);
+    this.generateDecor();
+  }
+
+  generateDecor() {
+    this.decor = [];
+    const count = CONFIG.arena.decorCount;
+    for (let i = 0; i < count; i++) {
+      const type = pick(["rock", "tree", "pillar", "ruin", "wall"]);
+      const x = rand(-this.arenaHalfW * 0.9, this.arenaHalfW * 0.9);
+      const y = rand(-this.arenaHalfH * 0.9, this.arenaHalfH * 0.9);
+      if (Math.abs(x) < 140 && Math.abs(y) < 140) continue;
+      this.decor.push({ x: x, y: y, type: type, size: rand(12, 30) });
+    }
+  }
+
+  clampToArena(e) {
+    e.x = clamp(e.x, -this.arenaHalfW + e.radius, this.arenaHalfW - e.radius);
+    e.y = clamp(e.y, -this.arenaHalfH + e.radius, this.arenaHalfH - e.radius);
   }
 
   startRun() {
@@ -618,8 +641,8 @@ class Game {
     const cageRadius = Math.min(CONFIG.bossArena.cageRadius, Math.max(300, Math.min(this.screenW, this.screenH) * 0.55));
     const a = Math.random() * Math.PI * 2;
     const d = cageRadius * 0.5;
-    boss.x = this.player.x + Math.cos(a) * d;
-    boss.y = this.player.y + Math.sin(a) * d;
+    boss.x = clamp(this.player.x + Math.cos(a) * d, -this.arenaHalfW + boss.radius, this.arenaHalfW - boss.radius);
+    boss.y = clamp(this.player.y + Math.sin(a) * d, -this.arenaHalfH + boss.radius, this.arenaHalfH - boss.radius);
     this.boss = boss;
     this.enemies.length = 0;
     this.cage = { x: this.player.x, y: this.player.y, radius: cageRadius };
@@ -632,8 +655,8 @@ class Game {
     const boss = createBoss(type, this.time);
     const a = Math.random() * Math.PI * 2;
     const d = this.spawnRadius * 0.6;
-    boss.x = this.player.x + Math.cos(a) * d;
-    boss.y = this.player.y + Math.sin(a) * d;
+    boss.x = clamp(this.player.x + Math.cos(a) * d, -this.arenaHalfW + boss.radius, this.arenaHalfW - boss.radius);
+    boss.y = clamp(this.player.y + Math.sin(a) * d, -this.arenaHalfH + boss.radius, this.arenaHalfH - boss.radius);
     this.boss = boss;
     this.bossWarning = 2.2;
     this.audio.play("bossSpawn");
@@ -713,6 +736,7 @@ class Game {
     const move = Input.getMoveVector();
     p.move(dt, move);
     if (this.cage) this.clampToCage(p);
+    this.clampToArena(p);
 
     if (p.invulnTimer > 0) p.invulnTimer -= dt;
     if (p.overloadTimer > 0) p.overloadTimer -= dt;
@@ -725,6 +749,7 @@ class Game {
     if (this.boss) {
       this.boss.update(this, dt);
       if (this.cage) this.clampToCage(this.boss);
+      this.clampToArena(this.boss);
       if (dist(p.x, p.y, this.boss.x, this.boss.y) < this.boss.radius + p.radius) {
         this.hitPlayer(this.boss.getDamage());
       }
@@ -978,6 +1003,10 @@ class Game {
     ctx.translate(halfW - this.camera.x + ox, halfH - this.camera.y + oy);
 
     this.drawBackground(ctx, halfW, halfH);
+    this.drawArenaBorder(ctx);
+    for (const d of this.decor) {
+      if (this.inView(d.x, d.y, halfW, halfH)) this.drawDecorItem(ctx, d);
+    }
     if (this.cage) this.drawCage(ctx);
 
     for (const g of this.gems) this.drawGem(ctx, g);
@@ -1016,6 +1045,10 @@ class Game {
     if (this.state === "CHEST") {
       this.drawChestWheel(ctx);
     }
+
+    if (this.player && this.state !== "MENU") {
+      this.drawMinimap(ctx);
+    }
   }
 
   inView(x, y, halfW, halfH) {
@@ -1049,6 +1082,102 @@ class Game {
       for (let y = top; y <= bottom; y += gs) {
         ctx.fillRect(x - 1, y - 1, 2, 2);
       }
+    }
+  }
+
+  drawArenaBorder(ctx) {
+    const w = this.arenaHalfW, h = this.arenaHalfH;
+    ctx.fillStyle = "rgba(10, 14, 26, 0.35)";
+    ctx.fillRect(-w - 40, -h - 40, w * 2 + 80, h * 2 + 80);
+    ctx.strokeStyle = "rgba(57, 208, 255, 0.35)";
+    ctx.lineWidth = 6;
+    ctx.strokeRect(-w, -h, w * 2, h * 2);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-w + 8, -h + 8, w * 2 - 16, h * 2 - 16);
+  }
+
+  drawDecorItem(ctx, d) {
+    const s = d.size;
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    switch (d.type) {
+      case "rock":
+        ctx.fillStyle = "rgba(118, 126, 142, 0.5)";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s, s * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(88, 96, 112, 0.45)";
+        ctx.beginPath();
+        ctx.ellipse(-s * 0.25, -s * 0.25, s * 0.4, s * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case "tree":
+        ctx.fillStyle = "rgba(86, 58, 38, 0.55)";
+        ctx.fillRect(-s * 0.15, 0, s * 0.3, s * 0.9);
+        ctx.fillStyle = "rgba(58, 128, 68, 0.5)";
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.15, s * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case "pillar":
+        ctx.fillStyle = "rgba(168, 172, 186, 0.5)";
+        ctx.fillRect(-s * 0.4, -s, s * 0.8, s * 1.9);
+        ctx.fillStyle = "rgba(140, 145, 160, 0.45)";
+        ctx.fillRect(-s * 0.42, -s * 1.15, s * 0.84, s * 0.35);
+        ctx.fillRect(-s * 0.3, -s * 1.45, s * 0.55, s * 0.3);
+        break;
+      case "ruin":
+      case "wall":
+        ctx.fillStyle = "rgba(118, 98, 78, 0.5)";
+        ctx.fillRect(-s, -s * 0.5, s * 2, s);
+        ctx.strokeStyle = "rgba(88, 73, 58, 0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-s, -s * 0.5, s * 2, s);
+        break;
+    }
+    ctx.restore();
+  }
+
+  drawMinimap(ctx) {
+    const size = 130;
+    const pad = 12;
+    const mx = this.screenW - size - pad;
+    const my = 76;
+    const sx = size / (this.arenaHalfW * 2);
+    const sy = size / (this.arenaHalfH * 2);
+
+    ctx.fillStyle = "rgba(6, 8, 16, 0.6)";
+    ctx.fillRect(mx - 3, my - 3, size + 6, size + 6);
+    ctx.strokeStyle = "rgba(57, 208, 255, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(mx, my, size, size);
+
+    if (this.boss) {
+      const bx = mx + (this.boss.x + this.arenaHalfW) * sx;
+      const by = my + (this.boss.y + this.arenaHalfH) * sy;
+      ctx.fillStyle = "#ff4d8d";
+      ctx.beginPath();
+      ctx.arc(bx, by, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (const e of this.enemies) {
+      if (e.elite) {
+        const ex = mx + (e.x + this.arenaHalfW) * sx;
+        const ey = my + (e.y + this.arenaHalfH) * sy;
+        ctx.fillStyle = "#ff8a3d";
+        ctx.fillRect(ex - 1, ey - 1, 3, 3);
+      }
+    }
+
+    if (this.player) {
+      const px = mx + (this.player.x + this.arenaHalfW) * sx;
+      const py = my + (this.player.y + this.arenaHalfH) * sy;
+      ctx.fillStyle = "#39d0ff";
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
