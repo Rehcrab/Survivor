@@ -46,6 +46,8 @@ class Game {
 
     this.pendingLevelUps = 0;
     this.currentChoices = [];
+    this.rerolls = 2;
+    this.deletes = 1;
 
     this.bossIndex = 0;
     this.endless = false;
@@ -103,6 +105,8 @@ class Game {
     this.magnetBurst = 0;
     this.pendingLevelUps = 0;
     this.currentChoices = [];
+    this.rerolls = 2;
+    this.deletes = 1;
     this.bossIndex = 0;
     this.endless = false;
     this.endlessBossTimer = 180;
@@ -163,6 +167,34 @@ class Game {
     }
   }
 
+  reroll() {
+    if (this.state !== "LEVEL_UP") return;
+    if (this.rerolls <= 0) return;
+    this.rerolls--;
+    this.currentChoices = generateChoices(this.player);
+    UI.showUpgrades(this, this.currentChoices);
+    this.audio.play("click");
+  }
+
+  deleteItem(type, id) {
+    if (this.deletes <= 0) return;
+    const p = this.player;
+    let removed = false;
+    if (type === "weapon") {
+      const idx = p.weapons.findIndex(w => w.id === id);
+      if (idx !== -1) { p.weapons.splice(idx, 1); removed = true; }
+    } else {
+      const idx = p.passives.findIndex(s => s.id === id);
+      if (idx !== -1) { p.passives.splice(idx, 1); removed = true; }
+    }
+    if (!removed) return;
+    this.deletes--;
+    p.applyMaxHpChange();
+    UI.refreshBuild(this);
+    UI.populatePauseBuild(this);
+    this.audio.play("click");
+  }
+
   addShake(amount) {
     if (Settings.shake) this.camera.addShake(amount);
   }
@@ -188,10 +220,31 @@ class Game {
     const crit = chance(this.player.critChance);
     const mult = this.player.damageMultiplier();
     const dmg = baseDamage * mult * (crit ? this.player.critDamage : 1);
-    e.hp -= dmg;
     e.hitFlash = 0.08;
     this.stats.damageDealt += dmg;
     this.trackDamage(sourceId, dmg);
+
+    if (e.shield > 0) {
+      e.shield -= dmg;
+      if (e.shield <= 0) {
+        const overflow = -e.shield;
+        e.shield = 0;
+        Particles.ring(e.x, e.y, "#c9d6ff", e.radius * 2.5, 0.35, 4);
+        Particles.burst(e.x, e.y, "#c9d6ff", 14, 180, 4);
+        if (overflow > 0) {
+          e.hp -= overflow;
+          if (crit) Particles.text(e.x, e.y - e.radius - 4, Math.round(overflow) + "!", "#ffd166", 17);
+          else Particles.text(e.x, e.y - e.radius - 4, Math.round(overflow), "#e8ecf8", 12);
+          if (e.hp <= 0) this.killEnemy(e);
+        }
+      } else {
+        if (crit) Particles.text(e.x, e.y - e.radius - 4, "shield!", "#c9d6ff", 14);
+        else if (chance(0.15)) Particles.text(e.x, e.y - e.radius - 4, Math.round(dmg), "#c9d6ff", 12);
+      }
+      return;
+    }
+
+    e.hp -= dmg;
     if (crit) Particles.text(e.x, e.y - e.radius - 4, Math.round(dmg) + "!", "#ffd166", 17);
     else if (chance(0.18)) Particles.text(e.x, e.y - e.radius - 4, Math.round(dmg), "#e8ecf8", 12);
     if (e.hp <= 0) this.killEnemy(e);
@@ -224,6 +277,15 @@ class Game {
     if (e.elite) {
       this.addShake(2);
       Particles.ring(e.x, e.y, "#ff8a3d", e.radius * 4, 0.3, 3);
+    }
+    if (e.mods && e.mods.includes("split")) {
+      const mult = difficultyMult(this);
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2;
+        this.enemies.push(createEnemy("swarm", e.x + Math.cos(a) * 20, e.y + Math.sin(a) * 20, {
+          hpMult: mult.hp, dmgMult: mult.dmg, speedMult: mult.speed,
+        }));
+      }
     }
   }
 
@@ -538,9 +600,9 @@ class Game {
 
   hitPlayer(dmg) {
     const p = this.player;
-    if (p.invulnTimer > 0) return;
+    if (p.invulnTimer > 0) return false;
     const applied = p.takeDamage(dmg);
-    if (!applied) return;
+    if (!applied) return false;
     Particles.burst(p.x, p.y, "#ff5f6d", 12, 180, 4);
     this.addShake(7);
     this.audio.play("playerHit");
@@ -548,6 +610,7 @@ class Game {
       p.hp = 0;
       this.endRun();
     }
+    return true;
   }
 
   spawnBoss(type) {
@@ -825,7 +888,11 @@ class Game {
       const e = enemies[i];
       const rr = e.radius + p.radius;
       if (dist2(e.x, e.y, p.x, p.y) < rr * rr) {
-        this.hitPlayer(e.damage);
+        const applied = this.hitPlayer(e.damage);
+        if (applied && e.mods && e.mods.includes("vampiric")) {
+          e.hp = Math.min(e.hp + e.damage * 0.6, e.maxHp);
+          Particles.text(e.x, e.y - e.radius - 4, "+", "#ff5f6d", 13);
+        }
       }
     }
   }

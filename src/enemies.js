@@ -1,5 +1,17 @@
 let enemyIdCounter = 0;
 
+function assignEliteMods() {
+  const pool = Object.keys(CONFIG.eliteMods);
+  const mods = [];
+  const count = 1;
+  for (let i = 0; i < count; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    mods.push(pool[idx]);
+    pool.splice(idx, 1);
+  }
+  return mods;
+}
+
 function createEnemy(type, x, y, opts) {
   opts = opts || {};
   const base = CONFIG.enemies[type];
@@ -8,7 +20,7 @@ function createEnemy(type, x, y, opts) {
   const dmgMult = (opts.dmgMult || 1) * (elite ? CONFIG.elite.damageMult : 1);
   const radius = base.radius * (elite ? CONFIG.elite.radiusMult : 1);
 
-  return {
+  const e = {
     id: enemyIdCounter++,
     type: type,
     x: x,
@@ -33,7 +45,20 @@ function createEnemy(type, x, y, opts) {
     kby: 0,
     flash: 0,
     hitFlash: 0,
+    mods: [],
+    shield: 0,
   };
+
+  if (elite) {
+    e.mods = assignEliteMods();
+    for (const m of e.mods) {
+      if (m === "swift") e.speed *= 1.4;
+      else if (m === "fortified") e.knockbackResist = 0.1;
+      else if (m === "armored") e.shield = e.maxHp * 0.5;
+    }
+  }
+
+  return e;
 }
 
 function updateEnemies(game, dt) {
@@ -50,6 +75,12 @@ function updateEnemies(game, dt) {
     e.kby *= Math.pow(0.0001, dt);
     if (e.hitFlash > 0) e.hitFlash -= dt;
 
+    let speedMult = 1;
+    if (e.mods && e.mods.includes("berserk") && e.hp < e.maxHp * 0.5) speedMult = 1.5;
+    if (e.mods && e.mods.includes("regenerating") && e.hp < e.maxHp) {
+      e.hp = Math.min(e.hp + e.maxHp * 0.02 * dt, e.maxHp);
+    }
+
     const dx = player.x - e.x;
     const dy = player.y - e.y;
     const d = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -63,8 +94,8 @@ function updateEnemies(game, dt) {
         moveX = -ny;
         moveY = nx;
       }
-      e.x += moveX * e.speed * slow * dt;
-      e.y += moveY * e.speed * slow * dt;
+      e.x += moveX * e.speed * slow * speedMult * dt;
+      e.y += moveY * e.speed * slow * speedMult * dt;
 
       e.fireTimer -= dt;
       if (e.fireTimer <= 0 && d < 480) {
@@ -73,8 +104,8 @@ function updateEnemies(game, dt) {
         game.fireEnemyProjectile(e.x, e.y, Math.cos(a), Math.sin(a), e.projSpeed, e.projDamage);
       }
     } else {
-      e.x += nx * e.speed * slow * dt;
-      e.y += ny * e.speed * slow * dt;
+      e.x += nx * e.speed * slow * speedMult * dt;
+      e.y += ny * e.speed * slow * speedMult * dt;
     }
 
     if (now - e.lastBladeHit > 5) e.lastBladeHit = 0;
@@ -101,6 +132,16 @@ function drawEnemy(ctx, e) {
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fill();
 
+  if (e.shield > 0) {
+    ctx.strokeStyle = "#c9d6ff";
+    ctx.lineWidth = 5;
+    ctx.globalAlpha = 0.75;
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
   ctx.fillStyle = "rgba(0,0,0,0.28)";
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
@@ -112,6 +153,23 @@ function drawEnemy(ctx, e) {
   ctx.arc(r * 0.28, -r * 0.25, r * 0.22, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
+
+  if (e.mods && e.mods.length) {
+    for (let i = 0; i < e.mods.length; i++) {
+      const mod = CONFIG.eliteMods[e.mods[i]];
+      ctx.strokeStyle = mod.color;
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 11 + i * 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = mod.color;
+      ctx.font = "bold 15px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(mod.icon, 0, -r - 13 - i * 16);
+    }
+  }
 
   ctx.restore();
 }

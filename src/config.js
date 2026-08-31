@@ -128,6 +128,16 @@ const CONFIG = {
     color: "#ff8a3d",
   },
 
+  eliteMods: {
+    swift: { name: "Swift", icon: "💨", color: "#7ae8ff", description: "+40% move speed" },
+    armored: { name: "Armored", icon: "🛡️", color: "#c9d6ff", description: "Shield must break before taking damage" },
+    fortified: { name: "Fortified", icon: "🪨", color: "#a06bff", description: "Heavily resists knockback" },
+    berserk: { name: "Berserk", icon: "💢", color: "#ff4d6d", description: "Moves faster at low HP" },
+    regenerating: { name: "Regenerating", icon: "💚", color: "#6dff9a", description: "Regenerates HP" },
+    split: { name: "Split", icon: "🧬", color: "#ff7ad9", description: "Spawns minions on death" },
+    vampiric: { name: "Vampiric", icon: "🩸", color: "#ff5f6d", description: "Heals when it hits you" },
+  },
+
   weapons: {
     magic_bolt: {
       name: "Magic Bolt",

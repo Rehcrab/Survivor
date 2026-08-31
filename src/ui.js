@@ -72,7 +72,7 @@ const UI = {
       "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop",
       "upgrade-cards", "stats-gameover", "stats-victory", "best-score", "menu-gold",
       "loadout-grid", "account-grid", "weapon-upgrades-grid", "shop-gold",
-      "pause-weapons", "pause-passives", "build-tooltip",
+      "pause-weapons", "pause-passives", "build-tooltip", "btn-reroll", "delete-count",
     ];
     ids.forEach(id => { this.el[id] = document.getElementById(id); });
   },
@@ -185,6 +185,11 @@ const UI = {
       card.addEventListener("click", () => game.selectUpgrade(i));
       container.appendChild(card);
     });
+    const rrBtn = this.el["btn-reroll"];
+    if (rrBtn) {
+      rrBtn.textContent = "REROLL (" + game.rerolls + " left)";
+      rrBtn.disabled = game.rerolls <= 0;
+    }
     this.show("levelup");
   },
 
@@ -231,10 +236,18 @@ const UI = {
     return html;
   },
 
-  makeBuildSlot(icon, level, tipHtml) {
+  makeBuildSlot(icon, level, tipHtml, onDelete) {
     const item = document.createElement("div");
     item.className = "pause-slot";
     item.innerHTML = '<div class="icon">' + icon + '</div><div class="lvl">' + level + "</div>";
+    if (onDelete) {
+      item.classList.add("deletable");
+      const delBtn = document.createElement("button");
+      delBtn.className = "del-btn";
+      delBtn.textContent = "×";
+      delBtn.addEventListener("click", (e) => { e.stopPropagation(); onDelete(); });
+      item.appendChild(delBtn);
+    }
     item.addEventListener("mouseenter", () => this.showTooltip(tipHtml, item));
     item.addEventListener("mouseleave", () => this.hideTooltip());
     item.addEventListener("click", (e) => {
@@ -257,16 +270,20 @@ const UI = {
     pc.innerHTML = "";
     const p = game.player;
     const total = game.stats.damageDealt || 0;
+    const canDelete = game.deletes > 0;
+    if (this.el["delete-count"]) {
+      this.el["delete-count"].textContent = canDelete ? "DELETE: " + game.deletes + " left — click × on a weapon/passive" : "No deletes left";
+    }
     for (const w of p.weapons) {
       const def = weaponDef(w.id);
       const dmg = game.weaponDamage[w.id] || 0;
       const pct = total > 0 ? Math.round(dmg / total * 100) : 0;
       const cleared = game.weaponCleared[w.id] || 0;
-      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level, dmg, pct, w.evolved, cleared)));
+      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level, dmg, pct, w.evolved, cleared), canDelete ? () => game.deleteItem("weapon", w.id) : null));
     }
     for (const s of p.passives) {
       const def = skillDef(s.id);
-      pc.appendChild(this.makeBuildSlot(def.icon, s.level, this.skillTip(s.id, s.level)));
+      pc.appendChild(this.makeBuildSlot(def.icon, s.level, this.skillTip(s.id, s.level), canDelete ? () => game.deleteItem("skill", s.id) : null));
     }
   },
 
@@ -311,6 +328,7 @@ const UI = {
 
     document.getElementById("pause-btn").addEventListener("click", () => game.togglePause());
     document.getElementById("speed-btn").addEventListener("click", () => game.cycleSpeed());
+    document.getElementById("btn-reroll").addEventListener("click", () => game.reroll());
 
     this.bindSetting("set-sound", "sound");
     this.bindSetting("set-music", "music");
