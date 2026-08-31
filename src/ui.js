@@ -69,16 +69,16 @@ const UI = {
       "canvas", "hud", "hp-fill", "hp-text", "xp-fill", "level-badge", "timer",
       "pause-btn", "speed-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
-      "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "loadout", "upgrades",
+      "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop",
       "upgrade-cards", "stats-gameover", "stats-victory", "best-score", "menu-gold",
-      "loadout-grid", "loadout-gold", "account-grid", "weapon-upgrades-grid", "upgrades-gold",
+      "loadout-grid", "account-grid", "weapon-upgrades-grid", "shop-gold",
       "pause-weapons", "pause-passives", "build-tooltip",
     ];
     ids.forEach(id => { this.el[id] = document.getElementById(id); });
   },
 
   hideAll() {
-    ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "loadout", "upgrades"].forEach(id => {
+    ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop"].forEach(id => {
       this.el[id].classList.add("hidden");
     });
   },
@@ -295,10 +295,8 @@ const UI = {
     document.getElementById("btn-settings").addEventListener("click", () => { AudioMan.play("click"); this.show("settings"); });
     document.getElementById("btn-settings-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); });
     document.getElementById("btn-howto-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); });
-    document.getElementById("btn-loadout").addEventListener("click", () => { AudioMan.play("click"); this.showLoadout(game); });
-    document.getElementById("btn-loadout-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); this.updateGold(); });
-    document.getElementById("btn-upgrades").addEventListener("click", () => { AudioMan.play("click"); this.showUpgradeShop(game); });
-    document.getElementById("btn-upgrades-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); this.updateGold(); });
+    document.getElementById("btn-shop").addEventListener("click", () => { AudioMan.play("click"); this.showShop(game); });
+    document.getElementById("btn-shop-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); this.updateGold(); });
 
     document.getElementById("btn-resume").addEventListener("click", () => game.resume());
     document.getElementById("btn-restart").addEventListener("click", () => game.startRun());
@@ -355,18 +353,55 @@ const UI = {
 
   updateGold() {
     if (this.el["menu-gold"]) this.el["menu-gold"].textContent = "GOLD: " + Settings.gold;
-    if (this.el["loadout-gold"]) this.el["loadout-gold"].textContent = "GOLD: " + Settings.gold;
-    if (this.el["upgrades-gold"]) this.el["upgrades-gold"].textContent = "GOLD: " + Settings.gold;
+    if (this.el["shop-gold"]) this.el["shop-gold"].textContent = "GOLD: " + Settings.gold;
   },
 
-  showUpgradeShop(game) {
+  showShop(game) {
     this.updateGold();
+
+    const grid = this.el["loadout-grid"];
+    grid.innerHTML = "";
+    for (const id in CONFIG.weapons) {
+      const def = weaponDef(id);
+      const unlocked = Settings.unlockedWeapons.includes(id);
+      const selected = Settings.startingWeapon === id;
+
+      const item = document.createElement("div");
+      item.className = "loadout-item" + (selected ? " selected" : "");
+      item.innerHTML =
+        '<div class="icon">' + def.icon + '</div>' +
+        '<div class="name">' + def.name + "</div>";
+
+      const btn = document.createElement("button");
+      if (selected) {
+        btn.className = "loadout-btn selected-btn";
+        btn.textContent = "SELECTED";
+        btn.disabled = true;
+      } else if (unlocked) {
+        btn.className = "loadout-btn";
+        btn.textContent = "SELECT";
+        btn.addEventListener("click", () => {
+          Settings.startingWeapon = id;
+          Settings.save();
+          this.showShop(game);
+        });
+      } else {
+        btn.className = "loadout-btn unlock-btn";
+        btn.textContent = "UNLOCK " + CONFIG.shop.weaponCost + "g";
+        if (Settings.gold < CONFIG.shop.weaponCost) btn.disabled = true;
+        btn.addEventListener("click", () => this.unlockWeapon(game, id));
+      }
+      item.appendChild(btn);
+      grid.appendChild(item);
+    }
+
     const acct = this.el["account-grid"];
     acct.innerHTML = "";
     for (const u of CONFIG.accountUpgrades) {
       const rank = Settings.accountRank(u.id);
       acct.appendChild(this.makeShopItem(u.icon, u.name, rank, u.maxRank, u.cost, u.description, () => this.buyAccountUpgrade(game, u)));
     }
+
     const wgrid = this.el["weapon-upgrades-grid"];
     wgrid.innerHTML = "";
     for (const wid in CONFIG.weaponUpgrades) {
@@ -374,7 +409,8 @@ const UI = {
       const rank = Settings.weaponRank(wid);
       wgrid.appendChild(this.makeShopItem(wu.icon, wu.name, rank, wu.maxRank, wu.cost, wu.description, () => this.buyWeaponUpgrade(game, wid, wu)));
     }
-    this.show("upgrades");
+
+    this.show("shop");
   },
 
   makeShopItem(icon, name, rank, maxRank, cost, description, onClick) {
@@ -407,7 +443,7 @@ const UI = {
     Settings.gold -= u.cost;
     Settings.accountUpgrades[u.id] = rank + 1;
     Settings.save();
-    this.showUpgradeShop(game);
+    this.showShop(game);
   },
 
   buyWeaponUpgrade(game, wid, wu) {
@@ -416,47 +452,7 @@ const UI = {
     Settings.gold -= wu.cost;
     Settings.weaponUpgrades[wid] = rank + 1;
     Settings.save();
-    this.showUpgradeShop(game);
-  },
-
-  showLoadout(game) {
-    this.updateGold();
-    const grid = this.el["loadout-grid"];
-    grid.innerHTML = "";
-    for (const id in CONFIG.weapons) {
-      const def = weaponDef(id);
-      const unlocked = Settings.unlockedWeapons.includes(id);
-      const selected = Settings.startingWeapon === id;
-
-      const item = document.createElement("div");
-      item.className = "loadout-item" + (selected ? " selected" : "");
-      item.innerHTML =
-        '<div class="icon">' + def.icon + '</div>' +
-        '<div class="name">' + def.name + "</div>";
-
-      const btn = document.createElement("button");
-      if (selected) {
-        btn.className = "loadout-btn selected-btn";
-        btn.textContent = "SELECTED";
-        btn.disabled = true;
-      } else if (unlocked) {
-        btn.className = "loadout-btn";
-        btn.textContent = "SELECT";
-        btn.addEventListener("click", () => {
-          Settings.startingWeapon = id;
-          Settings.save();
-          this.showLoadout(game);
-        });
-      } else {
-        btn.className = "loadout-btn unlock-btn";
-        btn.textContent = "UNLOCK " + CONFIG.shop.weaponCost + "g";
-        if (Settings.gold < CONFIG.shop.weaponCost) btn.disabled = true;
-        btn.addEventListener("click", () => this.unlockWeapon(game, id));
-      }
-      item.appendChild(btn);
-      grid.appendChild(item);
-    }
-    this.show("loadout");
+    this.showShop(game);
   },
 
   unlockWeapon(game, id) {
@@ -465,6 +461,6 @@ const UI = {
     if (!Settings.unlockedWeapons.includes(id)) Settings.unlockedWeapons.push(id);
     Settings.startingWeapon = id;
     Settings.save();
-    this.showLoadout(game);
+    this.showShop(game);
   },
 };

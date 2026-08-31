@@ -35,10 +35,9 @@ function effectiveStats(game, w) {
   }
   const rank = Settings.weaponRank(w.id);
   const wu = CONFIG.weaponUpgrades[w.id];
-  if (rank > 0 && wu) {
+  if (rank > 0 && wu && wu.add) {
     if (out === base) out = Object.assign({}, base);
-    const m = 1 + rank * wu.mult;
-    for (const f of wu.fields) if (out[f] !== undefined) out[f] *= m;
+    for (const k in wu.add) out[k] = (out[k] || 0) + wu.add[k];
   }
   return out;
 }

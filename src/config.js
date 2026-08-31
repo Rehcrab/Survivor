@@ -67,23 +67,23 @@ const CONFIG = {
   },
 
   accountUpgrades: [
-    { id: "weapon_slot", name: "Extra Weapon Slot", icon: "🔫", maxRank: 1, cost: 300, description: "+1 weapon slot (up to 5)" },
-    { id: "passive_slot", name: "Extra Passive Slot", icon: "📦", maxRank: 1, cost: 300, description: "+1 passive slot (up to 5)" },
-    { id: "start_hp", name: "Starting Vitality", icon: "❤️", maxRank: 2, cost: 150, description: "+25 starting HP per rank" },
-    { id: "crit_chance", name: "Critical Chance", icon: "🎯", maxRank: 5, cost: 200, description: "+5% crit chance per rank" },
-    { id: "crit_damage", name: "Critical Damage", icon: "💥", maxRank: 5, cost: 200, description: "+25% crit damage per rank" },
+    { id: "weapon_slot", name: "Extra Weapon Slot", icon: "🔫", maxRank: 1, cost: 600, description: "+1 weapon slot (up to 5)" },
+    { id: "passive_slot", name: "Extra Passive Slot", icon: "📦", maxRank: 1, cost: 600, description: "+1 passive slot (up to 5)" },
+    { id: "start_hp", name: "Starting Vitality", icon: "❤️", maxRank: 2, cost: 250, description: "+25 starting HP per rank" },
+    { id: "crit_chance", name: "Critical Chance", icon: "🎯", maxRank: 5, cost: 350, description: "+5% crit chance per rank" },
+    { id: "crit_damage", name: "Critical Damage", icon: "💥", maxRank: 5, cost: 350, description: "+25% crit damage per rank" },
   ],
 
   weaponUpgrades: {
-    magic_bolt: { name: "Astral Focus", icon: "✨", maxRank: 3, cost: 250, description: "+18% damage per rank", fields: ["damage"], mult: 0.18 },
-    fireball: { name: "Bigger Boom", icon: "🔥", maxRank: 3, cost: 250, description: "+15% damage & radius per rank", fields: ["damage", "explosionRadius"], mult: 0.15 },
-    blades: { name: "Longer Reach", icon: "⚔️", maxRank: 3, cost: 250, description: "+18% range & size per rank", fields: ["orbitRadius", "bladeRadius"], mult: 0.18 },
-    lightning: { name: "Overcharge", icon: "⚡", maxRank: 3, cost: 250, description: "+22% damage per rank", fields: ["damage"], mult: 0.22 },
-    boomerang: { name: "Heavy Glaive", icon: "🪃", maxRank: 3, cost: 250, description: "+18% damage per rank", fields: ["damage"], mult: 0.18 },
-    nova: { name: "Bigger Wave", icon: "💥", maxRank: 3, cost: 250, description: "+15% damage & radius per rank", fields: ["damage", "radius"], mult: 0.15 },
-    aura: { name: "Stronger Field", icon: "🔮", maxRank: 3, cost: 250, description: "+15% damage & radius per rank", fields: ["damage", "radius"], mult: 0.15 },
-    deflector: { name: "Wider Field", icon: "💠", maxRank: 3, cost: 250, description: "+20% radius per rank", fields: ["radius"], mult: 0.20 },
-    plasma: { name: "Hotter Plasma", icon: "🫧", maxRank: 3, cost: 250, description: "+18% damage & bounce per rank", fields: ["damage", "bounceBonus"], mult: 0.18 },
+    magic_bolt: { name: "Multishot", icon: "✨", maxRank: 1, cost: 800, description: "Fires +1 bolt per volley", add: { projectileCount: 1 } },
+    fireball: { name: "Twin Fireball", icon: "🔥", maxRank: 1, cost: 800, description: "Launches +1 fireball", add: { projectileCount: 1 } },
+    blades: { name: "Maelstrom", icon: "⚔️", maxRank: 1, cost: 800, description: "+2 orbiting blades", add: { bladeCount: 2 } },
+    lightning: { name: "Chain Lightning", icon: "⚡", maxRank: 1, cost: 800, description: "+1 lightning chain (always chains)", add: { chainCount: 1 } },
+    boomerang: { name: "Twin Glaive", icon: "🪃", maxRank: 1, cost: 800, description: "Throws +1 boomerang", add: { projectileCount: 1 } },
+    nova: { name: "Concussive Nova", icon: "💥", maxRank: 1, cost: 800, description: "Nova always knocks enemies back", add: { knockback: 260 } },
+    aura: { name: "Rejuvenating Aura", icon: "🔮", maxRank: 1, cost: 800, description: "Aura always heals +2 per tick", add: { heal: 2 } },
+    deflector: { name: "Overclock", icon: "💠", maxRank: 1, cost: 800, description: "+5 projectiles cleared per pulse", add: { maxClear: 5 } },
+    plasma: { name: "Volatile Orb", icon: "🫧", maxRank: 1, cost: 800, description: "+2 bounces per orb", add: { bounces: 2 } },
   },
 
   endless: {
