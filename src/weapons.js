@@ -33,6 +33,13 @@ function effectiveStats(game, w) {
       for (const k in evo.stats) out[k] = evo.stats[k];
     }
   }
+  const rank = Settings.weaponRank(w.id);
+  const wu = CONFIG.weaponUpgrades[w.id];
+  if (rank > 0 && wu) {
+    if (out === base) out = Object.assign({}, base);
+    const m = 1 + rank * wu.mult;
+    for (const f of wu.fields) if (out[f] !== undefined) out[f] *= m;
+  }
   return out;
 }
 

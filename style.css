@@ -817,3 +817,28 @@ html, body {
   color: var(--gold);
   margin-top: 3px;
 }
+
+.shop-heading {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-align: left;
+  margin: 16px 0 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+
+.shop-rank {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.shop-desc {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  min-height: 28px;
+  line-height: 1.3;
+}

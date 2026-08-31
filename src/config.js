@@ -57,6 +57,43 @@ const CONFIG = {
     weaponCost: 150,
   },
 
+  overflow: {
+    maxhp: { name: "Vitality", icon: "❤️", description: "+5 max HP" },
+    damage: { name: "Might", icon: "⚔️", description: "+3% damage" },
+    speed: { name: "Haste", icon: "💨", description: "+2% move speed" },
+    gold: { name: "Riches", icon: "💰", description: "+25 gold" },
+    heal: { name: "Restore", icon: "💚", description: "Fully restore HP" },
+    nuke: { name: "Nuke", icon: "☢️", description: "Destroy all enemies on screen" },
+  },
+
+  accountUpgrades: [
+    { id: "weapon_slot", name: "Extra Weapon Slot", icon: "🔫", maxRank: 1, cost: 300, description: "+1 weapon slot (up to 5)" },
+    { id: "passive_slot", name: "Extra Passive Slot", icon: "📦", maxRank: 1, cost: 300, description: "+1 passive slot (up to 5)" },
+    { id: "start_hp", name: "Starting Vitality", icon: "❤️", maxRank: 2, cost: 150, description: "+25 starting HP per rank" },
+    { id: "crit_chance", name: "Critical Chance", icon: "🎯", maxRank: 5, cost: 200, description: "+5% crit chance per rank" },
+    { id: "crit_damage", name: "Critical Damage", icon: "💥", maxRank: 5, cost: 200, description: "+25% crit damage per rank" },
+  ],
+
+  weaponUpgrades: {
+    magic_bolt: { name: "Astral Focus", icon: "✨", maxRank: 3, cost: 250, description: "+18% damage per rank", fields: ["damage"], mult: 0.18 },
+    fireball: { name: "Bigger Boom", icon: "🔥", maxRank: 3, cost: 250, description: "+15% damage & radius per rank", fields: ["damage", "explosionRadius"], mult: 0.15 },
+    blades: { name: "Longer Reach", icon: "⚔️", maxRank: 3, cost: 250, description: "+18% range & size per rank", fields: ["orbitRadius", "bladeRadius"], mult: 0.18 },
+    lightning: { name: "Overcharge", icon: "⚡", maxRank: 3, cost: 250, description: "+22% damage per rank", fields: ["damage"], mult: 0.22 },
+    boomerang: { name: "Heavy Glaive", icon: "🪃", maxRank: 3, cost: 250, description: "+18% damage per rank", fields: ["damage"], mult: 0.18 },
+    nova: { name: "Bigger Wave", icon: "💥", maxRank: 3, cost: 250, description: "+15% damage & radius per rank", fields: ["damage", "radius"], mult: 0.15 },
+    aura: { name: "Stronger Field", icon: "🔮", maxRank: 3, cost: 250, description: "+15% damage & radius per rank", fields: ["damage", "radius"], mult: 0.15 },
+    deflector: { name: "Wider Field", icon: "💠", maxRank: 3, cost: 250, description: "+20% radius per rank", fields: ["radius"], mult: 0.20 },
+    plasma: { name: "Hotter Plasma", icon: "🫧", maxRank: 3, cost: 250, description: "+18% damage & bounce per rank", fields: ["damage", "bounceBonus"], mult: 0.18 },
+  },
+
+  endless: {
+    bossInterval: 180,
+    scoreTime: 10,
+    scoreKill: 10,
+    scoreDamage: 0.1,
+    scoreBoss: 500,
+  },
+
   arena: {
     gridSize: 90,
   },

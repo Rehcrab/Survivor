@@ -3,7 +3,6 @@ class Player {
     this.x = 0;
     this.y = 0;
     this.radius = CONFIG.player.radius;
-    this.hp = CONFIG.player.maxHp;
     this.level = 1;
     this.xp = 0;
     this.xpToNext = xpForLevel(1);
@@ -12,15 +11,18 @@ class Player {
     this.invulnTimer = 0;
     this.facing = 0;
     this.regen = 0;
-    this.hpBeforeShield = CONFIG.player.maxHp;
+    this.overflowHp = 0;
+    this.overflowDamage = 0;
+    this.overflowSpeed = 0;
+    this.hp = this.maxHp;
   }
 
   get maxHp() {
-    return CONFIG.player.maxHp + this.toughnessLevel * 30;
+    return CONFIG.player.maxHp + this.toughnessLevel * 30 + Settings.accountRank("start_hp") * 25 + this.overflowHp;
   }
 
   get speed() {
-    return CONFIG.player.speed * (1 + this.swiftFeetLevel * 0.12);
+    return CONFIG.player.speed * (1 + this.swiftFeetLevel * 0.12) * (1 + this.overflowSpeed);
   }
 
   get pickupRadius() {
@@ -28,7 +30,19 @@ class Player {
   }
 
   get critChance() {
-    return CONFIG.player.baseCritChance + this.criticalLevel * 0.08;
+    return CONFIG.player.baseCritChance + this.criticalLevel * 0.08 + Settings.accountRank("crit_chance") * 0.05;
+  }
+
+  get critDamage() {
+    return CONFIG.player.critDamage + Settings.accountRank("crit_damage") * 0.25;
+  }
+
+  get maxWeapons() {
+    return CONFIG.player.maxWeapons + (Settings.accountRank("weapon_slot") > 0 ? 1 : 0);
+  }
+
+  get maxPassives() {
+    return CONFIG.player.maxPassives + (Settings.accountRank("passive_slot") > 0 ? 1 : 0);
   }
 
   get xpMult() {
@@ -62,7 +76,7 @@ class Player {
   }
 
   damageMultiplier() {
-    let m = 1;
+    let m = 1 + this.overflowDamage;
     if (this.berserkerLevel > 0 && this.hp <= this.maxHp * 0.3) {
       m *= 1 + this.berserkerLevel * 0.2;
     }

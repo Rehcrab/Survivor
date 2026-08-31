@@ -48,6 +48,9 @@ class Game {
     this.currentChoices = [];
 
     this.bossIndex = 0;
+    this.endless = false;
+    this.endlessBossTimer = 180;
+    this.endlessBossCount = 0;
 
     this.stats = {};
     this.weaponDamage = {};
@@ -99,6 +102,9 @@ class Game {
     this.pendingLevelUps = 0;
     this.currentChoices = [];
     this.bossIndex = 0;
+    this.endless = false;
+    this.endlessBossTimer = 180;
+    this.endlessBossCount = 0;
     this.resetStats();
     this.weaponDamage = {};
     this.lastRunGold = 0;
@@ -177,7 +183,7 @@ class Game {
   damageEnemy(e, baseDamage, sourceId) {
     const crit = chance(this.player.critChance);
     const mult = this.player.damageMultiplier();
-    const dmg = baseDamage * mult * (crit ? CONFIG.player.critDamage : 1);
+    const dmg = baseDamage * mult * (crit ? this.player.critDamage : 1);
     e.hp -= dmg;
     e.hitFlash = 0.08;
     this.stats.damageDealt += dmg;
@@ -190,7 +196,7 @@ class Game {
   hitBoss(baseDamage, sourceId) {
     const b = this.boss;
     const crit = chance(this.player.critChance);
-    const dmg = baseDamage * this.player.damageMultiplier() * (crit ? CONFIG.player.critDamage : 1);
+    const dmg = baseDamage * this.player.damageMultiplier() * (crit ? this.player.critDamage : 1);
     b.hp -= dmg;
     b.hitFlash = 0.08;
     this.stats.damageDealt += dmg;
@@ -536,7 +542,7 @@ class Game {
     this.audio.play("playerHit");
     if (p.hp <= 0) {
       p.hp = 0;
-      this.endRun(false);
+      this.endRun();
     }
   }
 
@@ -553,6 +559,28 @@ class Game {
     this.bossWarning = 2.2;
     this.audio.play("bossSpawn");
     this.addShake(8);
+  }
+
+  spawnEndlessBoss(type) {
+    const boss = createBoss(type, this.time);
+    const a = Math.random() * Math.PI * 2;
+    const d = this.spawnRadius * 0.6;
+    boss.x = this.player.x + Math.cos(a) * d;
+    boss.y = this.player.y + Math.sin(a) * d;
+    this.boss = boss;
+    this.bossWarning = 2.2;
+    this.audio.play("bossSpawn");
+    this.addShake(8);
+  }
+
+  nuke() {
+    const enemies = this.enemies;
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      this.killEnemy(enemies[i]);
+    }
+    Particles.ring(this.player.x, this.player.y, "#ffffff", Math.max(this.screenW, this.screenH), 0.5, 8);
+    this.addShake(10);
+    this.audio.play("nova");
   }
 
   killBoss() {
@@ -573,6 +601,7 @@ class Game {
       Settings.gold += goldTotal;
       Settings.save();
       this.lastRunGold = goldTotal;
+      Particles.text(this.player.x, this.player.y - 44, "+" + goldTotal + " gold", "#ffd166", 18);
     } else {
       const coins = 4;
       for (let i = 0; i < coins; i++) {
@@ -584,16 +613,22 @@ class Game {
     this.addShake(12);
     this.audio.play("bossDie");
     this.stats.bossesKilled++;
-    const isFinal = boss.final === true;
     this.boss = null;
     this.cage = null;
-    if (isFinal) {
-      this.endRun(true);
-    }
   }
 
-  endRun(victory) {
-    this.state = victory ? "VICTORY" : "GAME_OVER";
+  score() {
+    const e = CONFIG.endless;
+    return Math.floor(
+      this.time * e.scoreTime +
+      this.stats.enemiesKilled * e.scoreKill +
+      this.stats.damageDealt * e.scoreDamage +
+      this.stats.bossesKilled * e.scoreBoss
+    );
+  }
+
+  endRun() {
+    this.state = "GAME_OVER";
     if (Settings.bestTime < this.time) {
       Settings.bestTime = this.time;
       Settings.save();
@@ -602,18 +637,14 @@ class Game {
       { label: "Time Survived", value: formatTime(this.time) },
       { label: "Level", value: this.player.level },
       { label: "Enemies Defeated", value: this.stats.enemiesKilled },
-      { label: "XP Collected", value: Math.floor(this.stats.xpCollected) },
+      { label: "Bosses Defeated", value: this.stats.bossesKilled },
+      { label: "Score", value: this.score() },
     ];
-    if (victory) {
-      stats.push({ label: "Bosses Defeated", value: this.stats.bossesKilled });
-      stats.push({ label: "Damage Dealt", value: Math.floor(this.stats.damageDealt) });
-      stats.push({ label: "Gold Earned", value: "+" + this.lastRunGold });
-    }
-    UI.showStats(UI.el["stats-" + (victory ? "victory" : "gameover")], stats);
-    UI.show(victory ? "victory" : "gameover");
+    UI.showStats(UI.el["stats-gameover"], stats);
+    UI.show("gameover");
     UI.updateBestScore();
-    if (victory) this.audio.play("victory");
-    else this.audio.play("defeat");
+    UI.updateGold();
+    this.audio.play("defeat");
   }
 
   updatePlaying(dt) {
@@ -670,6 +701,17 @@ class Game {
     while (this.bossIndex < schedule.length && this.time >= schedule[this.bossIndex].time) {
       this.spawnBoss(schedule[this.bossIndex].type);
       this.bossIndex++;
+    }
+    if (this.bossIndex >= schedule.length) this.endless = true;
+
+    if (this.endless && !this.boss) {
+      this.endlessBossTimer -= dt;
+      if (this.endlessBossTimer <= 0) {
+        this.endlessBossTimer = CONFIG.endless.bossInterval;
+        const types = ["warden", "tyrant", "leviathan", "overlord"];
+        this.spawnEndlessBoss(types[this.endlessBossCount % types.length]);
+        this.endlessBossCount++;
+      }
     }
 
     this.checkLevelUp();

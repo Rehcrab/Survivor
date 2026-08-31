@@ -6,6 +6,8 @@ const Settings = {
   gold: 0,
   unlockedWeapons: ["magic_bolt"],
   startingWeapon: "magic_bolt",
+  accountUpgrades: {},
+  weaponUpgrades: {},
 
   load() {
     try {
@@ -17,6 +19,8 @@ const Settings = {
       this.gold = s.gold || 0;
       this.unlockedWeapons = Array.isArray(s.unlockedWeapons) ? s.unlockedWeapons : ["magic_bolt"];
       this.startingWeapon = s.startingWeapon || "magic_bolt";
+      this.accountUpgrades = s.accountUpgrades || {};
+      this.weaponUpgrades = s.weaponUpgrades || {};
     } catch (e) { /* ignore */ }
   },
 
@@ -30,8 +34,18 @@ const Settings = {
         gold: this.gold,
         unlockedWeapons: this.unlockedWeapons,
         startingWeapon: this.startingWeapon,
+        accountUpgrades: this.accountUpgrades,
+        weaponUpgrades: this.weaponUpgrades,
       }));
     } catch (e) { /* ignore */ }
+  },
+
+  accountRank(id) {
+    return this.accountUpgrades[id] || 0;
+  },
+
+  weaponRank(wid) {
+    return this.weaponUpgrades[wid] || 0;
   },
 };
 

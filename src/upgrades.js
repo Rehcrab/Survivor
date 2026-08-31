@@ -27,7 +27,7 @@ function generateChoices(player) {
   }
 
   const ownedWeapons = player.weapons.map(w => w.id);
-  if (player.weapons.length < CONFIG.player.maxWeapons) {
+  if (player.weapons.length < player.maxWeapons) {
     for (const id in CONFIG.weapons) {
       if (!ownedWeapons.includes(id)) {
         candidates.push({ type: "weapon", id: id, isNew: true, weight: 2 });
@@ -36,12 +36,16 @@ function generateChoices(player) {
   }
 
   const ownedSkills = player.passives.map(s => s.id);
-  if (player.passives.length < CONFIG.player.maxPassives) {
+  if (player.passives.length < player.maxPassives) {
     for (const id in CONFIG.skills) {
       if (!ownedSkills.includes(id)) {
         candidates.push({ type: "skill", id: id, isNew: true, weight: 2 });
       }
     }
+  }
+
+  if (candidates.length === 0) {
+    return shuffle(Object.keys(CONFIG.overflow)).slice(0, 3).map(id => ({ type: "overflow", id }));
   }
 
   const choices = [];
@@ -79,9 +83,23 @@ function enrichChoice(player, c) {
   };
 }
 
+function applyOverflow(game, id) {
+  const p = game.player;
+  switch (id) {
+    case "maxhp": p.overflowHp += 5; p.hp += 5; break;
+    case "damage": p.overflowDamage += 0.03; break;
+    case "speed": p.overflowSpeed += 0.02; break;
+    case "gold": Settings.gold += 25; Settings.save(); break;
+    case "heal": p.hp = p.maxHp; break;
+    case "nuke": game.nuke(); break;
+  }
+}
+
 function applyUpgrade(game, choice) {
   const player = game.player;
-  if (choice.type === "evo") {
+  if (choice.type === "overflow") {
+    applyOverflow(game, choice.id);
+  } else if (choice.type === "evo") {
     const w = player.weapons.find(w => w.id === choice.id);
     if (w) w.evolved = true;
   } else if (choice.type === "weapon") {

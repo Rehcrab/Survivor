@@ -42,8 +42,11 @@ const WEAPON_STAT_LABELS = [
   ["lifetime", "Lifetime"],
 ];
 
-function weaponStatLines(id, level) {
-  const st = weaponStats(id, level);
+function weaponStatLines(id, level, evolved) {
+  let st = weaponStats(id, level);
+  if (evolved && CONFIG.weapons[id].evo && CONFIG.weapons[id].evo.stats) {
+    st = Object.assign({}, st, CONFIG.weapons[id].evo.stats);
+  }
   const lines = [];
   for (const pair of WEAPON_STAT_LABELS) {
     const key = pair[0], label = pair[1];
@@ -66,16 +69,16 @@ const UI = {
       "canvas", "hud", "hp-fill", "hp-text", "xp-fill", "level-badge", "timer",
       "pause-btn", "speed-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
-      "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "loadout",
+      "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "loadout", "upgrades",
       "upgrade-cards", "stats-gameover", "stats-victory", "best-score", "menu-gold",
-      "loadout-grid", "loadout-gold",
+      "loadout-grid", "loadout-gold", "account-grid", "weapon-upgrades-grid", "upgrades-gold",
       "pause-weapons", "pause-passives", "build-tooltip",
     ];
     ids.forEach(id => { this.el[id] = document.getElementById(id); });
   },
 
   hideAll() {
-    ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "loadout"].forEach(id => {
+    ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "loadout", "upgrades"].forEach(id => {
       this.el[id].classList.add("hidden");
     });
   },
@@ -142,6 +145,12 @@ const UI = {
         name = evo.name;
         levelText = "EVOLUTION · " + def.name;
         desc = evo.description;
+      } else if (c.type === "overflow") {
+        const o = CONFIG.overflow[c.id];
+        icon = o.icon;
+        name = o.name;
+        levelText = "OVERFLOW";
+        desc = o.description;
       } else if (c.type === "weapon") {
         const def = weaponDef(c.id);
         icon = def.icon;
@@ -200,7 +209,7 @@ const UI = {
       html += '<div class="tip-damage">' + Math.round(dmg) + " damage · " + pct + "%</div>";
     }
     html += '<div class="tip-desc">' + def.description + "</div>";
-    const lines = weaponStatLines(id, level);
+    const lines = weaponStatLines(id, level, evolved);
     if (lines.length) {
       html += '<div class="tip-stats">';
       for (const pair of lines) {
@@ -288,6 +297,8 @@ const UI = {
     document.getElementById("btn-howto-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); });
     document.getElementById("btn-loadout").addEventListener("click", () => { AudioMan.play("click"); this.showLoadout(game); });
     document.getElementById("btn-loadout-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); this.updateGold(); });
+    document.getElementById("btn-upgrades").addEventListener("click", () => { AudioMan.play("click"); this.showUpgradeShop(game); });
+    document.getElementById("btn-upgrades-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); this.updateGold(); });
 
     document.getElementById("btn-resume").addEventListener("click", () => game.resume());
     document.getElementById("btn-restart").addEventListener("click", () => game.startRun());
@@ -345,6 +356,67 @@ const UI = {
   updateGold() {
     if (this.el["menu-gold"]) this.el["menu-gold"].textContent = "GOLD: " + Settings.gold;
     if (this.el["loadout-gold"]) this.el["loadout-gold"].textContent = "GOLD: " + Settings.gold;
+    if (this.el["upgrades-gold"]) this.el["upgrades-gold"].textContent = "GOLD: " + Settings.gold;
+  },
+
+  showUpgradeShop(game) {
+    this.updateGold();
+    const acct = this.el["account-grid"];
+    acct.innerHTML = "";
+    for (const u of CONFIG.accountUpgrades) {
+      const rank = Settings.accountRank(u.id);
+      acct.appendChild(this.makeShopItem(u.icon, u.name, rank, u.maxRank, u.cost, u.description, () => this.buyAccountUpgrade(game, u)));
+    }
+    const wgrid = this.el["weapon-upgrades-grid"];
+    wgrid.innerHTML = "";
+    for (const wid in CONFIG.weaponUpgrades) {
+      const wu = CONFIG.weaponUpgrades[wid];
+      const rank = Settings.weaponRank(wid);
+      wgrid.appendChild(this.makeShopItem(wu.icon, wu.name, rank, wu.maxRank, wu.cost, wu.description, () => this.buyWeaponUpgrade(game, wid, wu)));
+    }
+    this.show("upgrades");
+  },
+
+  makeShopItem(icon, name, rank, maxRank, cost, description, onClick) {
+    const item = document.createElement("div");
+    item.className = "loadout-item";
+    item.innerHTML =
+      '<div class="icon">' + icon + '</div>' +
+      '<div class="name">' + name + "</div>" +
+      '<div class="shop-rank">' + rank + " / " + maxRank + "</div>" +
+      '<div class="shop-desc">' + description + "</div>";
+
+    const btn = document.createElement("button");
+    if (rank >= maxRank) {
+      btn.className = "loadout-btn selected-btn";
+      btn.textContent = "MAXED";
+      btn.disabled = true;
+    } else {
+      btn.className = "loadout-btn unlock-btn";
+      btn.textContent = "BUY " + cost + "g";
+      if (Settings.gold < cost) btn.disabled = true;
+      btn.addEventListener("click", onClick);
+    }
+    item.appendChild(btn);
+    return item;
+  },
+
+  buyAccountUpgrade(game, u) {
+    const rank = Settings.accountRank(u.id);
+    if (rank >= u.maxRank || Settings.gold < u.cost) return;
+    Settings.gold -= u.cost;
+    Settings.accountUpgrades[u.id] = rank + 1;
+    Settings.save();
+    this.showUpgradeShop(game);
+  },
+
+  buyWeaponUpgrade(game, wid, wu) {
+    const rank = Settings.weaponRank(wid);
+    if (rank >= wu.maxRank || Settings.gold < wu.cost) return;
+    Settings.gold -= wu.cost;
+    Settings.weaponUpgrades[wid] = rank + 1;
+    Settings.save();
+    this.showUpgradeShop(game);
   },
 
   showLoadout(game) {
