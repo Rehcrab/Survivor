@@ -49,7 +49,7 @@ function createEnemy(type, x, y, opts) {
     shield: 0,
   };
 
-  if (elite && type !== "tank" && chance(CONFIG.elite.modChance)) {
+  if (elite && type === "tank" && chance(CONFIG.elite.modChance)) {
     e.mods = assignEliteMods();
     for (const m of e.mods) {
       if (m === "swift") e.speed *= 1.4;
