@@ -188,7 +188,9 @@ class Boss {
       if (ph === 2) type = pick(["tank", "tank", "basic"]);
       else type = pick(["tank", "tank", "tank", "basic"]);
       const elite = ph === 3 && chance(0.35);
-      game.enemies.push(createEnemy(type, x, y, { hpMult, dmgMult: mult.dmg, speedMult: mult.speed, elite }));
+      const m = createEnemy(type, x, y, { hpMult, dmgMult: mult.dmg, speedMult: mult.speed, elite });
+      m.isBossMinion = true;
+      game.enemies.push(m);
     }
   }
 

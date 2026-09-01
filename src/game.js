@@ -220,6 +220,7 @@ class Game {
   }
 
   updateSpawners(dt) {
+    if (this.boss) return;
     for (let i = 0; i < this.enemies.length; i++) {
       const s = this.enemies[i];
       if (!s.isSpawner || s.destroyed) continue;

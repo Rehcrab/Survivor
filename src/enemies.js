@@ -47,6 +47,7 @@ function createEnemy(type, x, y, opts) {
     hitFlash: 0,
     mods: [],
     shield: 0,
+    isBossMinion: false,
     homeX: null,
     homeY: null,
     leashRange: 0,
@@ -129,6 +130,17 @@ function updateEnemies(game, dt) {
 
     e.x = clamp(e.x, -game.arenaHalfW + e.radius, game.arenaHalfW - e.radius);
     e.y = clamp(e.y, -game.arenaHalfH + e.radius, game.arenaHalfH - e.radius);
+
+    if (game.cage && !e.isBossMinion) {
+      const cdx = e.x - game.cage.x, cdy = e.y - game.cage.y;
+      const cd = Math.hypot(cdx, cdy);
+      const minDist = game.cage.radius + e.radius + 20;
+      if (cd < minDist) {
+        const s = minDist / (cd || 1);
+        e.x = game.cage.x + cdx * s;
+        e.y = game.cage.y + cdy * s;
+      }
+    }
 
     if (now - e.lastBoomHit > 5) e.lastBoomHit = 0;
   }
