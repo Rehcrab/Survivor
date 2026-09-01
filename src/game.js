@@ -127,6 +127,7 @@ class Game {
       radius: CONFIG.spawners.radius,
       hp: hp,
       maxHp: hp,
+      baseHp: hp,
       zone: zone,
       spawnTimer: rand(1.5, 3),
       destroyed: false,
@@ -168,9 +169,10 @@ class Game {
   }
 
   createShrine() {
-    const cx = this.arenaHalfW * 0.8, cy = -this.arenaHalfH * 0.8;
+    const cx = this.arenaHalfW, cy = -this.arenaHalfH;
+    const diag = Math.hypot(this.arenaHalfW * 2, this.arenaHalfH * 2);
     const a = Math.random() * Math.PI * 2;
-    const r = Math.min(this.arenaHalfW, this.arenaHalfH) * 0.18;
+    const r = diag * CONFIG.world.zoneHard * rand(0.4, 0.8);
     const x = clamp(cx + Math.cos(a) * r, -this.arenaHalfW + 50, this.arenaHalfW - 50);
     const y = clamp(cy + Math.sin(a) * r, -this.arenaHalfH + 50, this.arenaHalfH - 50);
     this.shrine = {
@@ -211,6 +213,11 @@ class Game {
     for (let i = 0; i < this.enemies.length; i++) {
       const s = this.enemies[i];
       if (!s.isSpawner || s.destroyed) continue;
+      const newMax = s.baseHp * difficultyMult(this).hp;
+      if (newMax !== s.maxHp) {
+        s.hp = s.hp * (newMax / s.maxHp);
+        s.maxHp = newMax;
+      }
       s.spawnTimer -= dt;
       if (s.spawnTimer <= 0) {
         s.spawnTimer = CONFIG.spawners.spawnInterval / 1000;
@@ -861,8 +868,8 @@ class Game {
   spawnNaturalPickup(kind) {
     const a = Math.random() * Math.PI * 2;
     const d = rand(150, 330);
-    const x = this.player.x + Math.cos(a) * d;
-    const y = this.player.y + Math.sin(a) * d;
+    const x = clamp(this.player.x + Math.cos(a) * d, -this.arenaHalfW + 20, this.arenaHalfW - 20);
+    const y = clamp(this.player.y + Math.sin(a) * d, -this.arenaHalfH + 20, this.arenaHalfH - 20);
     if (kind === "heal") {
       this.dropHeal(x, y, CONFIG.heal.amount);
       Particles.ring(x, y, "#6dff9a", 40, 0.4, 3);
@@ -1287,7 +1294,7 @@ class Game {
 
     this.drawBackground(ctx, halfW, halfH);
     this.drawArenaBorder(ctx);
-    if (Input.altHeld()) this.drawZones(ctx);
+    if (Input.zHeld()) this.drawZones(ctx);
     for (const d of this.decor) {
       if (this.inView(d.x, d.y, halfW, halfH)) this.drawDecorItem(ctx, d);
     }
@@ -1623,6 +1630,18 @@ class Game {
     ctx.strokeStyle = "rgba(57, 208, 255, 0.5)";
     ctx.lineWidth = 2;
     ctx.strokeRect(mx, my, size, size);
+
+    if (Input.zHeld()) {
+      const zcx = mx + size, zcy = my;
+      ctx.fillStyle = "rgba(255, 209, 102, 0.22)";
+      ctx.beginPath();
+      ctx.arc(zcx, zcy, size * CONFIG.world.zoneMedium, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 77, 109, 0.32)";
+      ctx.beginPath();
+      ctx.arc(zcx, zcy, size * CONFIG.world.zoneHard, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     if (this.boss) {
       ctx.fillStyle = "#ff4d8d";

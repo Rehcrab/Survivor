@@ -103,7 +103,7 @@ const Input = {
     return "ontouchstart" in window || navigator.maxTouchPoints > 0;
   },
 
-  altHeld() {
-    return this.keys["AltLeft"] || this.keys["AltRight"];
+  zHeld() {
+    return this.keys["KeyZ"];
   },
 };
