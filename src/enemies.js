@@ -39,7 +39,7 @@ function createEnemy(type, x, y, opts) {
     fireTimer: base.fireCooldown ? (base.fireCooldown / 1000) * rand(0.4, 0.9) : 0,
     projSpeed: base.projSpeed || 0,
     projDamage: base.projDamage || 0,
-    lastBladeHit: 0,
+    lastBladeHit: [],
     lastBoomHit: 0,
     kbx: 0,
     kby: 0,
@@ -130,7 +130,6 @@ function updateEnemies(game, dt) {
     e.x = clamp(e.x, -game.arenaHalfW + e.radius, game.arenaHalfW - e.radius);
     e.y = clamp(e.y, -game.arenaHalfH + e.radius, game.arenaHalfH - e.radius);
 
-    if (now - e.lastBladeHit > 5) e.lastBladeHit = 0;
     if (now - e.lastBoomHit > 5) e.lastBoomHit = 0;
   }
 }

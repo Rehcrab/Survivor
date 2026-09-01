@@ -917,3 +917,10 @@ html, body {
   color: var(--gold);
   font-weight: 700;
 }
+
+.tip-heal {
+  font-size: 12px;
+  color: #6dff9a;
+  font-weight: 700;
+  margin-top: 3px;
+}

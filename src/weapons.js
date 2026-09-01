@@ -215,8 +215,10 @@ function fireWeapon(game, w, st) {
           game.hitBoss(st.damage * prox, w.id);
         }
       }
-      if (st.heal > 0) {
+      if (st.heal > 0 && player.hp < player.maxHp) {
+        const before = player.hp;
         player.hp = Math.min(player.hp + st.heal, player.maxHp);
+        game.weaponHealed[w.id] = (game.weaponHealed[w.id] || 0) + (player.hp - before);
       }
       Particles.ring(player.x, player.y, "#5dff9a", st.radius, 0.4, 4);
       return true;
@@ -274,18 +276,18 @@ function updateBlades(game, w, st, dt) {
     const enemies = game.enemies;
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
-      if (now < e.lastBladeHit) continue;
+      if (now < (e.lastBladeHit[i] || 0)) continue;
       const rr = st.bladeRadius + e.radius;
       if (dist2(bx, by, e.x, e.y) < rr * rr) {
-        e.lastBladeHit = now + 0.15;
+        e.lastBladeHit[i] = now + 0.2;
         game.damageEnemy(e, st.damage, w.id);
       }
     }
     const boss = game.boss;
-    if (boss && boss.hp > 0 && now >= boss.lastBladeHit) {
+    if (boss && boss.hp > 0 && now >= (boss.lastBladeHit[i] || 0)) {
       const rr = st.bladeRadius + boss.radius;
       if (dist2(bx, by, boss.x, boss.y) < rr * rr) {
-        boss.lastBladeHit = now + 0.15;
+        boss.lastBladeHit[i] = now + 0.2;
         game.hitBoss(st.damage, w.id);
       }
     }

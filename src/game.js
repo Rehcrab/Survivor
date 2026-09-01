@@ -60,6 +60,7 @@ class Game {
     this.stats = {};
     this.weaponDamage = {};
     this.weaponCleared = {};
+    this.weaponHealed = {};
     this.enemySlow = 0;
     this.lastRunGold = 0;
     this.shrine = null;
@@ -145,7 +146,7 @@ class Game {
       knockbackResist: 1,
       mods: [],
       shield: 0,
-      lastBladeHit: 0,
+      lastBladeHit: [],
       lastBoomHit: 0,
       kbx: 0,
       kby: 0,
@@ -409,6 +410,7 @@ class Game {
     this.resetStats();
     this.weaponDamage = {};
     this.weaponCleared = {};
+    this.weaponHealed = {};
     this.enemySlow = 0;
     this.lastRunGold = 0;
     this.masteries = {};

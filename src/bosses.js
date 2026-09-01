@@ -24,7 +24,7 @@ class Boss {
     this.flash = 0;
     this.spin = 0;
     this.hitFlash = 0;
-    this.lastBladeHit = 0;
+    this.lastBladeHit = [];
     this.lastBoomHit = 0;
     this.id = "boss";
   }

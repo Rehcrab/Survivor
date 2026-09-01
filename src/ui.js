@@ -230,6 +230,10 @@ const UI = {
     if (w.evolved && mCount > 0) {
       html += '<div class="tip-evo">Masteries: ' + mCount + "/" + CONFIG.mastery.maxPerWeapon + "</div>";
     }
+    const healed = game.weaponHealed && game.weaponHealed[w.id] ? game.weaponHealed[w.id] : 0;
+    if (healed > 0) {
+      html += '<div class="tip-heal">' + Math.round(healed) + " HP healed</div>";
+    }
     if (cleared) {
       html += '<div class="tip-damage">' + cleared + " projectiles cleared</div>";
     } else if (dmg != null) {
