@@ -25,6 +25,7 @@ class Projectile {
     this.bounces = 0;
     this.bounceBonus = 0;
     this.weaponId = null;
+    this.returnMult = 1;
   }
 
   reset(props) {
@@ -54,6 +55,7 @@ class Projectile {
     this.bounces = props.bounces || 0;
     this.bounceBonus = props.bounceBonus || 0;
     this.weaponId = props.weaponId || null;
+    this.returnMult = props.returnMult || 1;
   }
 }
 

@@ -212,7 +212,11 @@ const UI = {
       nameEl.textContent = l.icon + " " + l.name;
       const valEl = document.createElement("span");
       valEl.className = "ws-value";
-      valEl.textContent = l.cleared > 0 ? (l.cleared + " cleared") : (l.dmg + " dmg · " + l.pct + "%");
+      const parts = [];
+      if (l.cleared > 0) parts.push(l.cleared + " cleared");
+      else if (l.dmg > 0) parts.push(l.dmg + " dmg · " + l.pct + "%");
+      if (l.healed > 0) parts.push("+" + l.healed + " HP healed");
+      valEl.textContent = parts.join(" · ");
       row.appendChild(nameEl);
       row.appendChild(valEl);
       el.appendChild(row);

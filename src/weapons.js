@@ -64,6 +64,15 @@ function findMastery(weaponId, masteryId) {
   return null;
 }
 
+function boomerangReturnMult(w) {
+  if (w.evolved) return 2.0;
+  if (w.level >= 6) return 1.8;
+  if (w.level >= 5) return 1.6;
+  if (w.level >= 4) return 1.5;
+  if (w.level >= 3) return 1.4;
+  return 1.2;
+}
+
 function nearestEnemy(game, x, y, maxDist) {
   let best = null;
   let bestD = maxDist == null ? Infinity : maxDist * maxDist;
@@ -167,6 +176,7 @@ function fireWeapon(game, w, st) {
           radius: st.projectileRadius, damage: st.damage, pierce: st.pierce,
           lifetime: 6, color: "#ffe066", kind: "boomerang",
           range: st.range, spin: 0, owner: player, weaponId: w.id,
+          returnMult: boomerangReturnMult(w),
         }));
       }
       game.audio.play("shoot");

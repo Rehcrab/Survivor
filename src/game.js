@@ -1036,14 +1036,16 @@ class Game {
     const ids = new Set();
     for (const id in this.weaponDamage) ids.add(id);
     for (const id in this.weaponCleared) ids.add(id);
+    for (const id in this.weaponHealed) ids.add(id);
     const lines = [];
     for (const id of ids) {
       const def = weaponDef(id);
       if (!def) continue;
       const dmg = this.weaponDamage[id] || 0;
       const cleared = this.weaponCleared[id] || 0;
+      const healed = this.weaponHealed[id] || 0;
       const pct = total > 0 ? Math.round(dmg / total * 100) : 0;
-      lines.push({ icon: def.icon, name: def.name, dmg: Math.round(dmg), pct: pct, cleared: cleared });
+      lines.push({ icon: def.icon, name: def.name, dmg: Math.round(dmg), pct: pct, cleared: cleared, healed: Math.round(healed) });
     }
     lines.sort((a, b) => b.dmg - a.dmg);
     return lines;
@@ -1158,7 +1160,7 @@ class Game {
           if (p.kind === "boomerang") {
             if (now >= boss.lastBoomHit) {
               boss.lastBoomHit = now + 0.35;
-              this.hitBoss(p.damage, p.weaponId);
+              this.hitBoss(p.damage * (p.returning ? p.returnMult : 1), p.weaponId);
               p.remainingHits--;
               if (p.remainingHits <= 0) { p.active = false; continue; }
             }
@@ -1196,7 +1198,7 @@ class Game {
         if (p.kind === "boomerang") {
           if (now < e.lastBoomHit) continue;
           e.lastBoomHit = now + 0.35;
-          this.damageEnemy(e, p.damage, p.weaponId);
+          this.damageEnemy(e, p.damage * (p.returning ? p.returnMult : 1), p.weaponId);
           p.remainingHits--;
           if (p.remainingHits <= 0) { p.active = false; break; }
           continue;
