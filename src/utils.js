@@ -64,3 +64,9 @@ function hexToRgba(hex, alpha) {
 function TAU() {
   return Math.PI * 2;
 }
+
+function tileHash(ix, iy) {
+  let n = (ix * 374761393 + iy * 668265263) | 0;
+  n = (n ^ (n >> 13)) * 1274126177;
+  return ((n ^ (n >> 16)) >>> 0) / 4294967295;
+}
