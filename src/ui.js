@@ -136,7 +136,7 @@ const UI = {
       const card = document.createElement("div");
       card.className = "upgrade-card" + (c.type === "evo" ? " evo-card" : "");
 
-      let icon, name, levelText, desc;
+      let icon, name, levelText, desc, evoHint = "";
       if (c.type === "evo") {
         const def = weaponDef(c.id);
         const evo = def.evo;
@@ -157,6 +157,7 @@ const UI = {
         if (c.isNew) {
           levelText = "NEW WEAPON";
           desc = def.description;
+          evoHint = def.evo ? ("Evo with " + skillDef(def.evo.requires).icon) : "";
         } else {
           levelText = "LEVEL " + c.currentLevel + " → LEVEL " + c.nextLevel;
           desc = def.upgradeText[c.nextLevel - 1];
@@ -168,6 +169,12 @@ const UI = {
         if (c.isNew) {
           levelText = "NEW SKILL";
           desc = def.description;
+          const evoIcons = [];
+          for (const wid in CONFIG.weapons) {
+            const wdef = weaponDef(wid);
+            if (wdef.evo && wdef.evo.requires === c.id) evoIcons.push(wdef.evo.icon);
+          }
+          evoHint = evoIcons.length ? ("Evolves " + evoIcons.join(" ")) : "";
         } else {
           levelText = "LEVEL " + c.currentLevel + " → LEVEL " + c.nextLevel;
           desc = skillEffectText(c.id, c.nextLevel);
@@ -178,7 +185,9 @@ const UI = {
         '<div class="u-icon">' + icon + '</div>' +
         '<div class="u-body"><div class="u-name">' + name + '</div>' +
         '<div class="u-level">' + levelText + '</div>' +
-        '<div class="u-desc">' + desc + '</div></div>' +
+        '<div class="u-desc">' + desc + '</div>' +
+        (evoHint ? '<div class="u-evo-hint">' + evoHint + '</div>' : "") +
+        '</div>' +
         '<div class="u-key">' + (i + 1) + "</div>";
 
       card.addEventListener("click", () => game.selectUpgrade(i));
