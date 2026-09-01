@@ -42,11 +42,8 @@ const WEAPON_STAT_LABELS = [
   ["lifetime", "Lifetime"],
 ];
 
-function weaponStatLines(id, level, evolved) {
-  let st = weaponStats(id, level);
-  if (evolved && CONFIG.weapons[id].evo && CONFIG.weapons[id].evo.stats) {
-    st = Object.assign({}, st, CONFIG.weapons[id].evo.stats);
-  }
+function weaponStatLines(game, w) {
+  const st = effectiveStats(game, w);
   const lines = [];
   for (const pair of WEAPON_STAT_LABELS) {
     const key = pair[0], label = pair[1];
@@ -118,7 +115,7 @@ const UI = {
     for (const w of p.weapons) {
       const def = weaponDef(w.id);
       const item = document.createElement("div");
-      item.className = "build-item";
+      item.className = "build-item" + (w.evolved ? " evolved" : "");
       item.innerHTML = '<div class="icon">' + def.icon + '</div><div class="lvl">' + w.level + "</div>";
       this.el["bottom-left"].appendChild(item);
     }
@@ -205,12 +202,16 @@ const UI = {
     }
   },
 
-  weaponTip(id, level, dmg, pct, evolved, cleared) {
-    const def = weaponDef(id);
+  weaponTip(game, w, dmg, pct, cleared) {
+    const def = weaponDef(w.id);
     let html = '<div class="tip-name">' + def.icon + " " + def.name + "</div>";
-    html += '<div class="tip-level">Level ' + level + " / " + def.maxLevel + "</div>";
-    if (evolved && def.evo) {
+    html += '<div class="tip-level">Level ' + w.level + " / " + def.maxLevel + "</div>";
+    if (w.evolved && def.evo) {
       html += '<div class="tip-evo">' + def.evo.icon + " " + def.evo.name + "</div>";
+    }
+    const mCount = (game.masteries[w.id] || []).length;
+    if (w.evolved && mCount > 0) {
+      html += '<div class="tip-evo">Masteries: ' + mCount + "/" + CONFIG.mastery.maxPerWeapon + "</div>";
     }
     if (cleared) {
       html += '<div class="tip-damage">' + cleared + " projectiles cleared</div>";
@@ -218,7 +219,7 @@ const UI = {
       html += '<div class="tip-damage">' + Math.round(dmg) + " damage · " + pct + "%</div>";
     }
     html += '<div class="tip-desc">' + def.description + "</div>";
-    const lines = weaponStatLines(id, level, evolved);
+    const lines = weaponStatLines(game, w);
     if (lines.length) {
       html += '<div class="tip-stats">';
       for (const pair of lines) {
@@ -238,9 +239,9 @@ const UI = {
     return html;
   },
 
-  makeBuildSlot(icon, level, tipHtml, onDelete) {
+  makeBuildSlot(icon, level, tipHtml, onDelete, evolved) {
     const item = document.createElement("div");
-    item.className = "pause-slot";
+    item.className = "pause-slot" + (evolved ? " evolved" : "");
     item.innerHTML = '<div class="icon">' + icon + '</div><div class="lvl">' + level + "</div>";
     if (onDelete) {
       item.classList.add("deletable");
@@ -282,7 +283,7 @@ const UI = {
       const dmg = game.weaponDamage[w.id] || 0;
       const pct = total > 0 ? Math.round(dmg / total * 100) : 0;
       const cleared = game.weaponCleared[w.id] || 0;
-      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(w.id, w.level, dmg, pct, w.evolved, cleared), canDelete ? () => game.deleteItem("weapon", w.id) : null));
+      wc.appendChild(this.makeBuildSlot(def.icon, w.level, this.weaponTip(game, w, dmg, pct, cleared), canDelete ? () => game.deleteItem("weapon", w.id) : null, w.evolved));
     }
     for (const s of p.passives) {
       const def = skillDef(s.id);
@@ -527,11 +528,12 @@ const UI = {
       const card = document.createElement("div");
       card.className = "upgrade-card";
       const priceLine = item.sold ? "SOLD OUT" : item.cost + " gold";
+      const levelLine = item.type === "mastery" ? "Masteries: " + item.ownedCount + "/" + item.max + " · " + priceLine : priceLine;
       card.innerHTML =
         '<div class="u-icon">' + item.icon + '</div>' +
         '<div class="u-body"><div class="u-name">' + item.name + '</div>' +
         '<div class="u-desc">' + item.description + '</div>' +
-        '<div class="u-level">' + priceLine + "</div></div>";
+        '<div class="u-level">' + levelLine + "</div></div>";
       card.addEventListener("click", () => {
         if (item.sold || Settings.gold < item.cost) return;
         game.traderBuy(item);

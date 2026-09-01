@@ -113,11 +113,15 @@ class Game {
 
   createSpawner(zone) {
     const hp = zone === "easy" ? CONFIG.spawners.easyHp : zone === "medium" ? CONFIG.spawners.mediumHp : CONFIG.spawners.hardHp;
-    const a = Math.random() * Math.PI * 2;
-    const rFactor = zone === "easy" ? 0.22 : zone === "medium" ? 0.55 : 0.84;
-    const r = Math.hypot(this.arenaHalfW, this.arenaHalfH) * rFactor * rand(0.8, 1);
-    const x = clamp(Math.cos(a) * r, -this.arenaHalfW + 40, this.arenaHalfW - 40);
-    const y = clamp(Math.sin(a) * r, -this.arenaHalfH + 40, this.arenaHalfH - 40);
+    const a = rand(Math.PI * 0.5, Math.PI);
+    let t;
+    if (zone === "easy") t = rand(CONFIG.world.zoneMedium + 0.05, 0.95);
+    else if (zone === "medium") t = rand(CONFIG.world.zoneHard + 0.05, CONFIG.world.zoneMedium - 0.05);
+    else t = rand(0.05, CONFIG.world.zoneHard - 0.05);
+    const nx = Math.cos(a) * t;
+    const ny = Math.sin(a) * t;
+    const x = clamp(this.arenaHalfW + nx * 2 * this.arenaHalfW, -this.arenaHalfW + 40, this.arenaHalfW - 40);
+    const y = clamp(-this.arenaHalfH + ny * 2 * this.arenaHalfH, -this.arenaHalfH + 40, this.arenaHalfH - 40);
     return {
       id: enemyIdCounter++,
       isSpawner: true,
@@ -171,12 +175,12 @@ class Game {
   }
 
   createShrine() {
-    const cx = this.arenaHalfW, cy = -this.arenaHalfH;
-    const diag = Math.hypot(this.arenaHalfW * 2, this.arenaHalfH * 2);
-    const a = Math.random() * Math.PI * 2;
-    const r = diag * CONFIG.world.zoneHard * rand(0.4, 0.8);
-    const x = clamp(cx + Math.cos(a) * r, -this.arenaHalfW + 50, this.arenaHalfW - 50);
-    const y = clamp(cy + Math.sin(a) * r, -this.arenaHalfH + 50, this.arenaHalfH - 50);
+    const a = rand(Math.PI * 0.5, Math.PI);
+    const t = CONFIG.world.zoneHard * rand(0.3, 0.7);
+    const nx = Math.cos(a) * t;
+    const ny = Math.sin(a) * t;
+    const x = clamp(this.arenaHalfW + nx * 2 * this.arenaHalfW, -this.arenaHalfW + 50, this.arenaHalfW - 50);
+    const y = clamp(-this.arenaHalfH + ny * 2 * this.arenaHalfH, -this.arenaHalfH + 50, this.arenaHalfH - 50);
     this.shrine = {
       id: "shrine", type: "shrine",
       x: x,
@@ -290,7 +294,7 @@ class Game {
       if (available.length) {
         const m = pick(available);
         const wdef = weaponDef(w.id);
-        items.push({ type: "mastery", weaponId: w.id, masteryId: m.id, name: m.name, icon: m.icon, cost: m.cost || CONFIG.mastery.cost, description: wdef.name + ": " + m.description });
+        items.push({ type: "mastery", weaponId: w.id, masteryId: m.id, name: m.name, icon: m.icon, cost: m.cost || CONFIG.mastery.cost, description: wdef.name + ": " + m.description, ownedCount: owned.length, max: CONFIG.mastery.maxPerWeapon });
       }
     }
 
@@ -1445,17 +1449,23 @@ class Game {
 
   drawZones(ctx) {
     const cx = this.arenaHalfW, cy = -this.arenaHalfH;
-    const diag = Math.hypot(this.arenaHalfW * 2, this.arenaHalfH * 2);
+    const rxM = this.arenaHalfW * 2 * CONFIG.world.zoneMedium;
+    const ryM = this.arenaHalfH * 2 * CONFIG.world.zoneMedium;
+    const rxH = this.arenaHalfW * 2 * CONFIG.world.zoneHard;
+    const ryH = this.arenaHalfH * 2 * CONFIG.world.zoneHard;
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(-this.arenaHalfW, -this.arenaHalfH, this.arenaHalfW * 2, this.arenaHalfH * 2);
+    ctx.clip();
     ctx.fillStyle = "rgba(110, 255, 154, 0.08)";
     ctx.fillRect(-this.arenaHalfW, -this.arenaHalfH, this.arenaHalfW * 2, this.arenaHalfH * 2);
     ctx.fillStyle = "rgba(255, 209, 102, 0.10)";
     ctx.beginPath();
-    ctx.arc(cx, cy, diag * CONFIG.world.zoneMedium, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, rxM, ryM, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "rgba(255, 77, 109, 0.18)";
     ctx.beginPath();
-    ctx.arc(cx, cy, diag * CONFIG.world.zoneHard, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, rxH, ryH, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }

@@ -885,3 +885,10 @@ html, body {
 .pause-slot.deletable .del-btn {
   display: flex;
 }
+
+.build-item.evolved,
+.pause-slot.evolved {
+  background: linear-gradient(135deg, #3a2e0e, #2a2410);
+  border-color: var(--gold);
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.35);
+}

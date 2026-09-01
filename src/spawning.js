@@ -46,10 +46,9 @@ function chooseEnemyType(game) {
 }
 
 function zoneAt(game, x, y) {
-  const cx = game.arenaHalfW, cy = -game.arenaHalfH;
-  const d = Math.hypot(x - cx, y - cy);
-  const diag = Math.hypot(game.arenaHalfW * 2, game.arenaHalfH * 2);
-  const t = d / diag;
+  const nx = (x - game.arenaHalfW) / (2 * game.arenaHalfW);
+  const ny = (y + game.arenaHalfH) / (2 * game.arenaHalfH);
+  const t = Math.hypot(nx, ny);
   if (t < CONFIG.world.zoneHard) return "hard";
   if (t < CONFIG.world.zoneMedium) return "medium";
   return "easy";
@@ -57,9 +56,9 @@ function zoneAt(game, x, y) {
 
 function zoneModifiers(zone) {
   switch (zone) {
-    case "easy": return { hp: 0.8, dmg: 0.9 };
-    case "medium": return { hp: 1.2, dmg: 1.1 };
-    case "hard": return { hp: 1.8, dmg: 1.4 };
+    case "easy": return { hp: 0.9, dmg: 0.95 };
+    case "medium": return { hp: 1.1, dmg: 1.05 };
+    case "hard": return { hp: 1.25, dmg: 1.15 };
     default: return { hp: 1, dmg: 1 };
   }
 }
@@ -67,12 +66,17 @@ function zoneModifiers(zone) {
 function spawnerEnemyType(game, zone) {
   const m = game.time / 60;
   const intro = zone === "hard" ? 0.6 : zone === "medium" ? 0.8 : 1;
-  const hardBonus = zone === "hard" ? 3 : zone === "medium" ? 1 : 0;
   const pool = [["basic", 10]];
   if (m >= 0.8 * intro) pool.push(["runner", 3]);
   if (m >= 2 * intro) pool.push(["swarm", 2]);
-  if (m >= 2.5 * intro) pool.push(["tank", 2 + hardBonus]);
-  if (m >= 3.5 * intro) pool.push(["ranged", 2 + hardBonus]);
+  if (m >= 2.5 * intro) pool.push(["tank", 2 + (zone === "hard" ? 2 : 0)]);
+  if (m >= 3.5 * intro) pool.push(["ranged", 2 + (zone === "hard" ? 1 : 0)]);
+  if (zone === "hard") {
+    if (m >= 15) pool.push(["warden", 1]);
+    if (m >= 20) pool.push(["tyrant", 1]);
+    if (m >= 25) pool.push(["leviathan", 1]);
+    if (m >= 30) pool.push(["overlord", 1]);
+  }
   let total = 0;
   for (const p of pool) total += p[1];
   let r = Math.random() * total;
