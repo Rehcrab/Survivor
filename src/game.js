@@ -77,6 +77,8 @@ class Game {
       bossesKilled: 0,
       damageDealt: 0,
       xpCollected: 0,
+      goldGained: 0,
+      goldSpent: 0,
     };
   }
 
@@ -166,6 +168,7 @@ class Game {
     this.player.addXp(CONFIG.spawners.xpReward);
     this.stats.xpCollected += CONFIG.spawners.xpReward;
     Settings.gold += CONFIG.spawners.goldReward;
+    this.stats.goldGained += CONFIG.spawners.goldReward;
     Settings.save();
     Particles.text(s.x, s.y - s.radius - 6, "+" + CONFIG.spawners.goldReward + " gold", "#ffd166", 16);
     Particles.burst(s.x, s.y, "#ff8a3d", 22, 220, 5);
@@ -304,6 +307,7 @@ class Game {
   traderBuy(item) {
     if (item.sold || Settings.gold < item.cost) return;
     Settings.gold -= item.cost;
+    this.stats.goldSpent += item.cost;
     Settings.save();
     const p = this.player;
     switch (item.type) {
@@ -331,6 +335,7 @@ class Game {
     const cost = this.shrineCost();
     if (Settings.gold < cost) return;
     Settings.gold -= cost;
+    this.stats.goldSpent += cost;
     Settings.save();
     this.shrine.uses++;
     const p = this.player;
@@ -722,6 +727,7 @@ class Game {
         gold[i] = gold[gold.length - 1];
         gold.pop();
         Settings.gold += g.amount;
+        this.stats.goldGained += g.amount;
         Settings.save();
         Particles.text(p.x, p.y - p.radius - 8, "+" + g.amount + " gold", "#ffd166", 15);
         Particles.burst(p.x, p.y, "#ffd166", 6, 120, 3);
@@ -762,6 +768,7 @@ class Game {
   grantChestGold() {
     if (chance(CONFIG.gold.chestChance)) {
       Settings.gold += CONFIG.gold.chestAmount;
+      this.stats.goldGained += CONFIG.gold.chestAmount;
       Settings.save();
       Particles.text(this.player.x, this.player.y - this.player.radius - 20, "+" + CONFIG.gold.chestAmount + " gold", "#ffd166", 16);
     }
@@ -969,6 +976,7 @@ class Game {
     const goldTotal = isFinalBoss ? CONFIG.gold.bossAmountFinal : CONFIG.gold.bossAmountMid;
     if (isFinalBoss) {
       Settings.gold += goldTotal;
+      this.stats.goldGained += goldTotal;
       Settings.save();
       this.lastRunGold = goldTotal;
       Particles.text(this.player.x, this.player.y - 44, "+" + goldTotal + " gold", "#ffd166", 18);
@@ -1009,12 +1017,33 @@ class Game {
       { label: "Enemies Defeated", value: this.stats.enemiesKilled },
       { label: "Bosses Defeated", value: this.stats.bossesKilled },
       { label: "Score", value: this.score() },
+      { label: "Gold Gained", value: "+" + Math.round(this.stats.goldGained) },
+      { label: "Gold Spent", value: "-" + Math.round(this.stats.goldSpent) },
     ];
     UI.showStats(UI.el["stats-gameover"], stats);
+    UI.showWeaponStats(UI.el["weapon-stats"], this.buildWeaponBreakdown());
     UI.show("gameover");
     UI.updateBestScore();
     UI.updateGold();
     this.audio.play("defeat");
+  }
+
+  buildWeaponBreakdown() {
+    const total = this.stats.damageDealt || 0;
+    const ids = new Set();
+    for (const id in this.weaponDamage) ids.add(id);
+    for (const id in this.weaponCleared) ids.add(id);
+    const lines = [];
+    for (const id of ids) {
+      const def = weaponDef(id);
+      if (!def) continue;
+      const dmg = this.weaponDamage[id] || 0;
+      const cleared = this.weaponCleared[id] || 0;
+      const pct = total > 0 ? Math.round(dmg / total * 100) : 0;
+      lines.push({ icon: def.icon, name: def.name, dmg: Math.round(dmg), pct: pct, cleared: cleared });
+    }
+    lines.sort((a, b) => b.dmg - a.dmg);
+    return lines;
   }
 
   updatePlaying(dt) {

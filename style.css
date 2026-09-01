@@ -892,3 +892,28 @@ html, body {
   border-color: var(--gold);
   box-shadow: 0 0 10px rgba(255, 209, 102, 0.35);
 }
+
+.weapon-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 14px;
+  text-align: left;
+}
+
+.weapon-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 14px;
+}
+
+.weapon-stat .ws-name {
+  color: var(--text);
+}
+
+.weapon-stat .ws-value {
+  color: var(--gold);
+  font-weight: 700;
+}

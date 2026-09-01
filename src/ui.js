@@ -67,7 +67,7 @@ const UI = {
       "pause-btn", "speed-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
       "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader",
-      "upgrade-cards", "stats-gameover", "stats-victory", "best-score", "menu-gold",
+      "upgrade-cards", "stats-gameover", "stats-victory", "weapon-stats", "best-score", "menu-gold",
       "loadout-grid", "account-grid", "weapon-upgrades-grid", "shop-gold",
       "shrine-gold", "shrine-blessings", "trader-gold", "trader-items",
       "pause-weapons", "pause-passives", "build-tooltip", "btn-reroll", "delete-count",
@@ -198,6 +198,23 @@ const UI = {
       const row = document.createElement("div");
       row.className = "stat";
       row.innerHTML = '<span class="label">' + s.label + '</span><span class="value">' + s.value + "</span>";
+      el.appendChild(row);
+    }
+  },
+
+  showWeaponStats(el, lines) {
+    el.innerHTML = "";
+    for (const l of lines) {
+      const row = document.createElement("div");
+      row.className = "weapon-stat";
+      const nameEl = document.createElement("span");
+      nameEl.className = "ws-name";
+      nameEl.textContent = l.icon + " " + l.name;
+      const valEl = document.createElement("span");
+      valEl.className = "ws-value";
+      valEl.textContent = l.cleared > 0 ? (l.cleared + " cleared") : (l.dmg + " dmg · " + l.pct + "%");
+      row.appendChild(nameEl);
+      row.appendChild(valEl);
       el.appendChild(row);
     }
   },
