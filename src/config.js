@@ -101,7 +101,7 @@ const CONFIG = {
   },
 
   spawners: {
-    count: 6,
+    perZone: 4,
     spawnInterval: 2200,
     easyHp: 4000,
     mediumHp: 20000,
@@ -224,8 +224,8 @@ const CONFIG = {
     speedCap: 0.18,
     spawnIntervalMin: 520,
     spawnIntervalMax: 1600,
-    maxEnemiesMin: 60,
-    maxEnemiesMax: 170,
+    maxEnemiesMin: 260,
+    maxEnemiesMax: 370,
     bossHpScale: 0.05,
   },
 

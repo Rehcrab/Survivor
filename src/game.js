@@ -150,8 +150,10 @@ class Game {
 
   createSpawners() {
     const zones = ["easy", "medium", "hard"];
-    for (let i = 0; i < CONFIG.spawners.count; i++) {
-      this.enemies.push(this.createSpawner(zones[i % zones.length]));
+    for (const zone of zones) {
+      for (let i = 0; i < CONFIG.spawners.perZone; i++) {
+        this.enemies.push(this.createSpawner(zone));
+      }
     }
   }
 
@@ -229,7 +231,12 @@ class Game {
         let y = s.y + Math.sin(a) * d;
         x = clamp(x, -this.arenaHalfW + 20, this.arenaHalfW - 20);
         y = clamp(y, -this.arenaHalfH + 20, this.arenaHalfH - 20);
-        spawnEnemy(this, type, x, y, { elite: chance(spawnerEliteChance(this, s.zone)) });
+        const e = spawnEnemy(this, type, x, y, { elite: chance(spawnerEliteChance(this, s.zone)) });
+        if (e) {
+          e.homeX = s.x;
+          e.homeY = s.y;
+          e.leashRange = 620;
+        }
       }
     }
   }
@@ -1635,7 +1642,6 @@ class Game {
     ctx.strokeRect(mx, my, size, size);
 
     if (Input.zHeld()) {
-      const diag = Math.hypot(this.arenaHalfW * 2, this.arenaHalfH * 2);
       const zcx = mx + size, zcy = my;
       ctx.save();
       ctx.beginPath();
@@ -1645,11 +1651,11 @@ class Game {
       ctx.fillRect(mx, my, size, size);
       ctx.fillStyle = "rgba(255, 209, 102, 0.22)";
       ctx.beginPath();
-      ctx.ellipse(zcx, zcy, diag * CONFIG.world.zoneMedium * sx, diag * CONFIG.world.zoneMedium * sy, 0, 0, Math.PI * 2);
+      ctx.arc(zcx, zcy, size * CONFIG.world.zoneMedium, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "rgba(255, 77, 109, 0.32)";
       ctx.beginPath();
-      ctx.ellipse(zcx, zcy, diag * CONFIG.world.zoneHard * sx, diag * CONFIG.world.zoneHard * sy, 0, 0, Math.PI * 2);
+      ctx.arc(zcx, zcy, size * CONFIG.world.zoneHard, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }

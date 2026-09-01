@@ -57,9 +57,9 @@ function zoneAt(game, x, y) {
 
 function zoneModifiers(zone) {
   switch (zone) {
-    case "easy": return { hp: 1, dmg: 1 };
+    case "easy": return { hp: 0.8, dmg: 0.9 };
     case "medium": return { hp: 1.2, dmg: 1.1 };
-    case "hard": return { hp: 1.5, dmg: 1.25 };
+    case "hard": return { hp: 1.8, dmg: 1.4 };
     default: return { hp: 1, dmg: 1 };
   }
 }

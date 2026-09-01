@@ -47,6 +47,11 @@ function createEnemy(type, x, y, opts) {
     hitFlash: 0,
     mods: [],
     shield: 0,
+    homeX: null,
+    homeY: null,
+    leashRange: 0,
+    wanderAngle: 0,
+    wanderTimer: 0,
   };
 
   if (elite && type === "tank" && chance(CONFIG.elite.modChance)) {
@@ -87,7 +92,20 @@ function updateEnemies(game, dt) {
     const d = Math.sqrt(dx * dx + dy * dy) || 1;
     const nx = dx / d, ny = dy / d;
 
-    if (e.ranged) {
+    if (e.homeX != null && dist2(player.x, player.y, e.homeX, e.homeY) > e.leashRange * e.leashRange) {
+      e.wanderTimer = (e.wanderTimer || 0) - dt;
+      if (e.wanderTimer <= 0) {
+        e.wanderTimer = rand(1, 2.5);
+        e.wanderAngle = rand(0, Math.PI * 2);
+      }
+      e.x += Math.cos(e.wanderAngle) * e.speed * slow * speedMult * 0.6 * dt;
+      e.y += Math.sin(e.wanderAngle) * e.speed * slow * speedMult * 0.6 * dt;
+      if (dist2(e.x, e.y, e.homeX, e.homeY) > e.leashRange * e.leashRange) {
+        const ha = angleTo(e.x, e.y, e.homeX, e.homeY);
+        e.x = e.homeX + Math.cos(ha) * e.leashRange;
+        e.y = e.homeY + Math.sin(ha) * e.leashRange;
+      }
+    } else if (e.ranged) {
       let moveX = 0, moveY = 0;
       if (d > 280) { moveX = nx; moveY = ny; }
       else if (d < 170) { moveX = -nx; moveY = -ny; }
