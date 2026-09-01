@@ -501,7 +501,8 @@ const UI = {
       card.innerHTML =
         '<div class="u-icon">' + b.icon + '</div>' +
         '<div class="u-body"><div class="u-name">' + b.name + '</div>' +
-        '<div class="u-desc">' + b.description + '</div></div>';
+        '<div class="u-desc">' + b.description + '</div>' +
+        '<div class="u-level">' + cost + " gold</div></div>";
       card.addEventListener("click", () => {
         if (Settings.gold < game.shrineCost()) return;
         game.shrineBless(b);
@@ -525,17 +526,18 @@ const UI = {
     for (const item of game.trader.inventory) {
       const card = document.createElement("div");
       card.className = "upgrade-card";
+      const priceLine = item.sold ? "SOLD OUT" : item.cost + " gold";
       card.innerHTML =
         '<div class="u-icon">' + item.icon + '</div>' +
         '<div class="u-body"><div class="u-name">' + item.name + '</div>' +
         '<div class="u-desc">' + item.description + '</div>' +
-        '<div class="u-level">' + item.cost + " gold</div></div>";
+        '<div class="u-level">' + priceLine + "</div></div>";
       card.addEventListener("click", () => {
-        if (Settings.gold < item.cost) return;
+        if (item.sold || Settings.gold < item.cost) return;
         game.traderBuy(item);
         this.showTrader(game);
       });
-      if (Settings.gold < item.cost) card.style.opacity = "0.5";
+      if (item.sold || Settings.gold < item.cost) card.style.opacity = "0.5";
       container.appendChild(card);
     }
     this.show("trader");

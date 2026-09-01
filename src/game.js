@@ -291,7 +291,7 @@ class Game {
   }
 
   traderBuy(item) {
-    if (Settings.gold < item.cost) return;
+    if (item.sold || Settings.gold < item.cost) return;
     Settings.gold -= item.cost;
     Settings.save();
     const p = this.player;
@@ -312,7 +312,8 @@ class Game {
         break;
       }
     }
-    this.audio.play("click");
+    item.sold = true;
+    this.audio.play("ding");
   }
 
   shrineBless(blessing) {
@@ -1439,6 +1440,8 @@ class Game {
     const cx = this.arenaHalfW, cy = -this.arenaHalfH;
     const diag = Math.hypot(this.arenaHalfW * 2, this.arenaHalfH * 2);
     ctx.save();
+    ctx.fillStyle = "rgba(110, 255, 154, 0.08)";
+    ctx.fillRect(-this.arenaHalfW, -this.arenaHalfH, this.arenaHalfW * 2, this.arenaHalfH * 2);
     ctx.fillStyle = "rgba(255, 209, 102, 0.10)";
     ctx.beginPath();
     ctx.arc(cx, cy, diag * CONFIG.world.zoneMedium, 0, Math.PI * 2);
@@ -1632,15 +1635,23 @@ class Game {
     ctx.strokeRect(mx, my, size, size);
 
     if (Input.zHeld()) {
+      const diag = Math.hypot(this.arenaHalfW * 2, this.arenaHalfH * 2);
       const zcx = mx + size, zcy = my;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(mx, my, size, size);
+      ctx.clip();
+      ctx.fillStyle = "rgba(110, 255, 154, 0.18)";
+      ctx.fillRect(mx, my, size, size);
       ctx.fillStyle = "rgba(255, 209, 102, 0.22)";
       ctx.beginPath();
-      ctx.arc(zcx, zcy, size * CONFIG.world.zoneMedium, 0, Math.PI * 2);
+      ctx.ellipse(zcx, zcy, diag * CONFIG.world.zoneMedium * sx, diag * CONFIG.world.zoneMedium * sy, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "rgba(255, 77, 109, 0.32)";
       ctx.beginPath();
-      ctx.arc(zcx, zcy, size * CONFIG.world.zoneHard, 0, Math.PI * 2);
+      ctx.ellipse(zcx, zcy, diag * CONFIG.world.zoneHard * sx, diag * CONFIG.world.zoneHard * sy, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
     }
 
     if (this.boss) {

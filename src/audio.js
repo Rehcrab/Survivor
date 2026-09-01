@@ -81,6 +81,7 @@ const AudioMan = {
       case "bossSpawn": this.tone(60, 0.6, "sawtooth", 0.3, 30); break;
       case "bossDie": this.noise(0.5, 0.3, 400); this.tone(60, 0.5, "sawtooth", 0.3, 25); break;
       case "click": this.tone(500, 0.05, "square", 0.08); break;
+      case "ding": this.tone(1318, 0.14, "sine", 0.22, 1760); break;
       case "victory": [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => this.tone(f, 0.22, "triangle", 0.18), i * 110)); break;
       case "defeat": [400, 300, 220, 150].forEach((f, i) => setTimeout(() => this.tone(f, 0.24, "sawtooth", 0.16), i * 130)); break;
     }
