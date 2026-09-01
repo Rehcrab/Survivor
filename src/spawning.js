@@ -31,6 +31,10 @@ function chooseEnemyType(game) {
   if (m >= 2) pool.push(["swarm", 2]);
   if (m >= 8) pool.push(["ranged", 3], ["tank", 3]);
 
+  for (const p of CONFIG.progression) {
+    if (game.time >= p.time) pool.push([p.type, p.weight]);
+  }
+
   let total = 0;
   for (const p of pool) total += p[1];
   let r = Math.random() * total;
@@ -41,16 +45,56 @@ function chooseEnemyType(game) {
   return "basic";
 }
 
-function spawnEnemy(game, type, x, y, elite) {
-  if (game.enemies.length >= maxEnemies(game)) return;
-  const mult = difficultyMult(game);
+function zoneAt(game, x, y) {
+  const d = Math.hypot(x, y);
+  const r = Math.hypot(game.arenaHalfW, game.arenaHalfH);
+  if (d < r * CONFIG.world.zoneEasy) return "easy";
+  if (d < r * CONFIG.world.zoneMedium) return "medium";
+  return "hard";
+}
+
+function zoneModifiers(zone) {
+  switch (zone) {
+    case "easy": return { hp: 1, dmg: 1 };
+    case "medium": return { hp: 1.2, dmg: 1.1 };
+    case "hard": return { hp: 1.5, dmg: 1.25 };
+    default: return { hp: 1, dmg: 1 };
+  }
+}
+
+function spawnerEnemyType(game, zone) {
+  const pool = zone === "easy"
+    ? [["basic", 8], ["runner", 2]]
+    : zone === "medium"
+      ? [["basic", 5], ["runner", 3], ["tank", 2], ["swarm", 2], ["ranged", 1]]
+      : [["tank", 4], ["ranged", 3], ["runner", 3], ["swarm", 3], ["basic", 2]];
+  let total = 0;
+  for (const p of pool) total += p[1];
+  let r = Math.random() * total;
+  for (const p of pool) { r -= p[1]; if (r <= 0) return p[0]; }
+  return "basic";
+}
+
+function spawnerEliteChance(game, zone) {
+  const base = difficultyMult(game).eliteChance;
+  if (zone === "easy") return base * 0.5;
+  if (zone === "medium") return base;
+  return Math.min(base * 1.6, 0.3);
+}
+
+function spawnEnemy(game, type, x, y, opts) {
+  opts = opts || {};
+  if (game.enemies.length >= maxEnemies(game)) return null;
+  const d = difficultyMult(game);
+  const z = zoneModifiers(zoneAt(game, x, y));
   const e = createEnemy(type, x, y, {
-    hpMult: mult.hp,
-    dmgMult: mult.dmg,
-    speedMult: mult.speed,
-    elite: elite,
+    hpMult: d.hp * z.hp * (opts.hpMult || 1),
+    dmgMult: d.dmg * z.dmg * (opts.dmgMult || 1),
+    speedMult: d.speed * (opts.speedMult || 1),
+    elite: !!opts.elite,
   });
   game.enemies.push(e);
+  return e;
 }
 
 function spawnAtRandomEdge(game, type, elite) {
@@ -60,7 +104,7 @@ function spawnAtRandomEdge(game, type, elite) {
   let y = game.player.y + Math.sin(a) * r;
   x = clamp(x, -game.arenaHalfW + 30, game.arenaHalfW - 30);
   y = clamp(y, -game.arenaHalfH + 30, game.arenaHalfH - 30);
-  spawnEnemy(game, type, x, y, elite);
+  spawnEnemy(game, type, x, y, { elite: elite });
 }
 
 function updateSpawner(game, dt) {
@@ -89,7 +133,7 @@ function updateSpawner(game, dt) {
       const sa = (i / 9) * Math.PI * 2;
       const sx = cx + Math.cos(sa) * 55;
       const sy = cy + Math.sin(sa) * 55;
-      spawnEnemy(game, "swarm", sx, sy, false);
+      spawnEnemy(game, "swarm", sx, sy, {});
     }
   }
 }

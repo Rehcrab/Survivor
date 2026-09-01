@@ -68,6 +68,7 @@ function updateEnemies(game, dt) {
   const slow = game.enemySlow > 0 ? 0.5 : 1;
   for (let i = 0; i < arr.length; i++) {
     const e = arr[i];
+    if (e.isSpawner) continue;
 
     e.x += e.kbx * dt;
     e.y += e.kby * dt;
@@ -117,6 +118,7 @@ function updateEnemies(game, dt) {
 }
 
 function drawEnemy(ctx, e) {
+  if (e.isSpawner) { drawSpawner(ctx, e); return; }
   const r = e.radius;
   ctx.save();
   ctx.translate(e.x, e.y);
@@ -175,4 +177,42 @@ function drawEnemy(ctx, e) {
   }
 
   ctx.restore();
+}
+
+function drawSpawner(ctx, e) {
+  const r = e.radius;
+  const now = performance.now();
+  ctx.save();
+  ctx.translate(e.x, e.y);
+
+  ctx.fillStyle = e.hitFlash > 0 ? "#ffffff" : "#2a1f35";
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  const pulse = 0.55 + Math.sin(now / 280) * 0.3;
+  ctx.strokeStyle = "#ff8a3d";
+  ctx.lineWidth = 3;
+  ctx.globalAlpha = pulse;
+  ctx.beginPath();
+  ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = "#ff8a3d";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.5, now / 300, now / 300 + 4.2, false);
+  ctx.stroke();
+
+  ctx.restore();
+
+  const barW = r * 2.8;
+  const barH = 5;
+  const bx = e.x - barW / 2;
+  const by = e.y - r - 16;
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+  ctx.fillStyle = "#ff4d6d";
+  ctx.fillRect(bx, by, barW * clamp(e.hp / e.maxHp, 0, 1), barH);
 }

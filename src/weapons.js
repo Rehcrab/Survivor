@@ -39,11 +39,29 @@ function effectiveStats(game, w) {
     if (out === base) out = Object.assign({}, base);
     for (const k in wu.add) out[k] = (out[k] || 0) + wu.add[k];
   }
+  const mIds = game.masteries && game.masteries[w.id];
+  if (mIds && mIds.length) {
+    if (out === base) out = Object.assign({}, base);
+    for (const mid of mIds) {
+      const m = findMastery(w.id, mid);
+      if (m) {
+        if (m.add) for (const k in m.add) out[k] = (out[k] || 0) + m.add[k];
+        if (m.mult) for (const k in m.mult) out[k] = (out[k] || 0) * (1 + m.mult[k]);
+      }
+    }
+  }
   return out;
 }
 
 function weaponDef(id) {
   return CONFIG.weapons[id];
+}
+
+function findMastery(weaponId, masteryId) {
+  const list = CONFIG.masteries[weaponId];
+  if (!list) return null;
+  for (const m of list) if (m.id === masteryId) return m;
+  return null;
 }
 
 function nearestEnemy(game, x, y, maxDist) {

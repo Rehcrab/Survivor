@@ -62,6 +62,11 @@ class Game {
     this.weaponCleared = {};
     this.enemySlow = 0;
     this.lastRunGold = 0;
+    this.shrine = null;
+    this.trader = null;
+    this.masteries = {};
+    this.interactCooldown = 0;
+    this.notice = null;
     this.resetStats();
   }
 
@@ -105,6 +110,235 @@ class Game {
     e.y = clamp(e.y, -this.arenaHalfH + e.radius, this.arenaHalfH - e.radius);
   }
 
+  createSpawner(zone) {
+    const hp = zone === "easy" ? CONFIG.spawners.easyHp : zone === "medium" ? CONFIG.spawners.mediumHp : CONFIG.spawners.hardHp;
+    const a = Math.random() * Math.PI * 2;
+    const rFactor = zone === "easy" ? 0.22 : zone === "medium" ? 0.55 : 0.84;
+    const r = Math.hypot(this.arenaHalfW, this.arenaHalfH) * rFactor * rand(0.8, 1);
+    const x = clamp(Math.cos(a) * r, -this.arenaHalfW + 40, this.arenaHalfW - 40);
+    const y = clamp(Math.sin(a) * r, -this.arenaHalfH + 40, this.arenaHalfH - 40);
+    return {
+      id: enemyIdCounter++,
+      isSpawner: true,
+      type: "spawner",
+      x: x,
+      y: y,
+      radius: CONFIG.spawners.radius,
+      hp: hp,
+      maxHp: hp,
+      zone: zone,
+      spawnTimer: rand(1.5, 3),
+      destroyed: false,
+      elite: false,
+      speed: 0,
+      damage: 0,
+      xpValue: 0,
+      ranged: false,
+      knockbackResist: 1,
+      mods: [],
+      shield: 0,
+      lastBladeHit: 0,
+      lastBoomHit: 0,
+      kbx: 0,
+      kby: 0,
+      flash: 0,
+      hitFlash: 0,
+    };
+  }
+
+  createSpawners() {
+    const zones = ["easy", "medium", "hard"];
+    for (let i = 0; i < CONFIG.spawners.count; i++) {
+      this.enemies.push(this.createSpawner(zones[i % zones.length]));
+    }
+  }
+
+  killSpawner(s) {
+    s.destroyed = true;
+    this.player.addXp(CONFIG.spawners.xpReward);
+    this.stats.xpCollected += CONFIG.spawners.xpReward;
+    Settings.gold += CONFIG.spawners.goldReward;
+    Settings.save();
+    Particles.text(s.x, s.y - s.radius - 6, "+" + CONFIG.spawners.goldReward + " gold", "#ffd166", 16);
+    Particles.burst(s.x, s.y, "#ff8a3d", 22, 220, 5);
+    Particles.ring(s.x, s.y, "#ff8a3d", s.radius * 3, 0.4, 4);
+    this.addShake(6);
+    this.audio.play("bossDie");
+  }
+
+  createShrine() {
+    const a = Math.random() * Math.PI * 2;
+    const baseR = Math.hypot(this.arenaHalfW, this.arenaHalfH) * 0.8;
+    const r = baseR * rand(0.9, 1.05);
+    this.shrine = {
+      id: "shrine", type: "shrine",
+      x: Math.cos(a) * r,
+      y: Math.sin(a) * r,
+      radius: CONFIG.shrine.radius,
+      uses: 0,
+    };
+  }
+
+  createTrader() {
+    const a = Math.random() * Math.PI * 2;
+    const r = this.arenaHalfW * 0.35 * rand(0.5, 1);
+    this.trader = {
+      id: "trader", type: "trader",
+      x: Math.cos(a) * r,
+      y: Math.sin(a) * r,
+      radius: CONFIG.trader.radius,
+      dirX: 1, dirY: 0,
+      changeTimer: rand(2, 5),
+      restockTimer: rand(CONFIG.trader.restockMin, CONFIG.trader.restockMax),
+      inventory: [],
+    };
+  }
+
+  shrineCost() {
+    return Math.floor(CONFIG.shrine.baseCost * Math.pow(CONFIG.shrine.costMult, this.shrine.uses));
+  }
+
+  traderSlotCost(rank) {
+    return Math.floor(CONFIG.trader.slotBaseCost * Math.pow(CONFIG.trader.slotCostMult, rank));
+  }
+
+  updateSpawners(dt) {
+    for (let i = 0; i < this.enemies.length; i++) {
+      const s = this.enemies[i];
+      if (!s.isSpawner || s.destroyed) continue;
+      s.spawnTimer -= dt;
+      if (s.spawnTimer <= 0) {
+        s.spawnTimer = CONFIG.spawners.spawnInterval / 1000;
+        if (this.enemies.length >= maxEnemies(this)) continue;
+        const type = spawnerEnemyType(this, s.zone);
+        const a = Math.random() * Math.PI * 2;
+        const d = rand(30, 70);
+        let x = s.x + Math.cos(a) * d;
+        let y = s.y + Math.sin(a) * d;
+        x = clamp(x, -this.arenaHalfW + 20, this.arenaHalfW - 20);
+        y = clamp(y, -this.arenaHalfH + 20, this.arenaHalfH - 20);
+        spawnEnemy(this, type, x, y, { elite: chance(spawnerEliteChance(this, s.zone)) });
+      }
+    }
+  }
+
+  updateTrader(dt) {
+    const t = this.trader;
+    if (!t) return;
+    t.changeTimer -= dt;
+    if (t.changeTimer <= 0) {
+      t.changeTimer = rand(2, 5);
+      const a = Math.random() * Math.PI * 2;
+      t.dirX = Math.cos(a);
+      t.dirY = Math.sin(a);
+    }
+    t.x += t.dirX * CONFIG.trader.speed * dt;
+    t.y += t.dirY * CONFIG.trader.speed * dt;
+    t.x = clamp(t.x, -this.arenaHalfW + t.radius, this.arenaHalfW - t.radius);
+    t.y = clamp(t.y, -this.arenaHalfH + t.radius, this.arenaHalfH - t.radius);
+
+    t.restockTimer -= dt;
+    if (t.restockTimer <= 0) {
+      t.restockTimer = rand(CONFIG.trader.restockMin, CONFIG.trader.restockMax);
+      t.inventory = this.generateTraderInventory();
+      this.notice = { text: "Trader Restocked!", timer: 2.5 };
+      this.audio.play("levelup");
+    }
+  }
+
+  generateTraderInventory() {
+    const items = [];
+    items.push({ type: "reroll", name: "Reroll Token", icon: "🔄", cost: CONFIG.trader.rerollCost, description: "+1 reroll for this run" });
+    items.push({ type: "delete", name: "Delete Token", icon: "🗑️", cost: CONFIG.trader.deleteCost, description: "+1 delete for this run" });
+    items.push({ type: "heal", name: "Heal", icon: "💚", cost: CONFIG.trader.healCost, description: "Fully restore HP" });
+    items.push({ type: "slot_weapon", name: "Extra Weapon Slot", icon: "🔫", cost: this.traderSlotCost(this.player.runWeaponSlots), description: "+1 weapon slot this run" });
+    items.push({ type: "slot_passive", name: "Extra Passive Slot", icon: "📦", cost: this.traderSlotCost(this.player.runPassiveSlots), description: "+1 passive slot this run" });
+
+    const buffPool = CONFIG.trader.buffs.slice();
+    for (let i = 0; i < 2 && buffPool.length; i++) {
+      const idx = Math.floor(Math.random() * buffPool.length);
+      const b = buffPool.splice(idx, 1)[0];
+      items.push({ type: "buff", id: b.id, name: b.name, icon: b.icon, cost: CONFIG.trader.buffCost, description: b.description });
+    }
+
+    for (const w of this.player.weapons) {
+      if (!w.evolved) continue;
+      const list = CONFIG.masteries[w.id];
+      if (!list) continue;
+      const owned = this.masteries[w.id] || [];
+      if (owned.length >= CONFIG.mastery.maxPerWeapon) continue;
+      const available = list.filter(m => !owned.includes(m.id));
+      if (available.length) {
+        const m = pick(available);
+        const wdef = weaponDef(w.id);
+        items.push({ type: "mastery", weaponId: w.id, masteryId: m.id, name: m.name, icon: m.icon, cost: m.cost || CONFIG.mastery.cost, description: wdef.name + ": " + m.description });
+      }
+    }
+
+    return items;
+  }
+
+  traderBuy(item) {
+    if (Settings.gold < item.cost) return;
+    Settings.gold -= item.cost;
+    Settings.save();
+    const p = this.player;
+    switch (item.type) {
+      case "reroll": this.rerolls++; break;
+      case "delete": this.deletes++; break;
+      case "heal": p.hp = p.maxHp; break;
+      case "slot_weapon": p.runWeaponSlots++; break;
+      case "slot_passive": p.runPassiveSlots++; break;
+      case "buff": {
+        const b = CONFIG.trader.buffs.find(bb => bb.id === item.id);
+        p.tempBuffs[b.apply] = { timer: CONFIG.trader.buffDuration, value: b.value };
+        break;
+      }
+      case "mastery": {
+        if (!this.masteries[item.weaponId]) this.masteries[item.weaponId] = [];
+        this.masteries[item.weaponId].push(item.masteryId);
+        break;
+      }
+    }
+    this.audio.play("click");
+  }
+
+  shrineBless(blessing) {
+    const cost = this.shrineCost();
+    if (Settings.gold < cost) return;
+    Settings.gold -= cost;
+    Settings.save();
+    this.shrine.uses++;
+    const p = this.player;
+    switch (blessing.apply) {
+      case "damage": p.bonusDamage += blessing.value; break;
+      case "speed": p.bonusSpeed += blessing.value; break;
+      case "hp": p.bonusHp += blessing.value; p.hp += blessing.value; break;
+      case "crit": p.bonusCrit += blessing.value; break;
+      case "pickup": p.bonusPickup += blessing.value; break;
+    }
+    p.applyMaxHpChange();
+    this.audio.play("levelup");
+  }
+
+  checkPOIInteraction() {
+    if (this.interactCooldown > 0) return;
+    const p = this.player;
+    if (this.shrine && dist(p.x, p.y, this.shrine.x, this.shrine.y) < this.shrine.radius + p.radius + 6) {
+      this.state = "SHRINE";
+      UI.showShrine(this);
+    } else if (this.trader && dist(p.x, p.y, this.trader.x, this.trader.y) < this.trader.radius + p.radius + 6) {
+      this.state = "TRADER";
+      UI.showTrader(this);
+    }
+  }
+
+  closeShop() {
+    this.state = "PLAYING";
+    UI.hideAll();
+    this.interactCooldown = 2;
+  }
+
   startRun() {
     this.player = new Player();
     this.player.weapons.push(createWeapon(Settings.startingWeapon || "magic_bolt"));
@@ -139,6 +373,14 @@ class Game {
     this.weaponCleared = {};
     this.enemySlow = 0;
     this.lastRunGold = 0;
+    this.masteries = {};
+    this.interactCooldown = 0;
+    this.notice = null;
+    this.shrine = null;
+    this.trader = null;
+    this.createSpawners();
+    this.createShrine();
+    this.createTrader();
     this.camera.snapTo(this.player.x, this.player.y);
     this.state = "PLAYING";
     UI.hideAll();
@@ -258,7 +500,7 @@ class Game {
           e.hp -= overflow;
           if (crit) Particles.text(e.x, e.y - e.radius - 4, Math.round(overflow) + "!", "#ffd166", 17);
           else Particles.text(e.x, e.y - e.radius - 4, Math.round(overflow), "#e8ecf8", 12);
-          if (e.hp <= 0) this.killEnemy(e);
+          if (e.hp <= 0) this.killEnemy(e, sourceId);
         }
       } else {
         if (crit) Particles.text(e.x, e.y - e.radius - 4, "shield!", "#c9d6ff", 14);
@@ -270,7 +512,7 @@ class Game {
     e.hp -= dmg;
     if (crit) Particles.text(e.x, e.y - e.radius - 4, Math.round(dmg) + "!", "#ffd166", 17);
     else if (chance(0.18)) Particles.text(e.x, e.y - e.radius - 4, Math.round(dmg), "#e8ecf8", 12);
-    if (e.hp <= 0) this.killEnemy(e);
+    if (e.hp <= 0) this.killEnemy(e, sourceId);
   }
 
   hitBoss(baseDamage, sourceId) {
@@ -286,15 +528,30 @@ class Game {
     if (b.hp <= 0) this.killBoss();
   }
 
-  killEnemy(e) {
+  killEnemy(e, sourceId) {
     const idx = this.enemies.indexOf(e);
     if (idx !== -1) {
       this.enemies[idx] = this.enemies[this.enemies.length - 1];
       this.enemies.pop();
     }
+    if (e.isSpawner) {
+      this.killSpawner(e);
+      return;
+    }
     this.stats.enemiesKilled++;
     this.dropGem(e.x, e.y, e.xpValue);
     if (chance(CONFIG.gold.enemyChance)) this.dropGold(e.x, e.y, CONFIG.gold.enemyAmount);
+    if (sourceId) {
+      const mIds = this.masteries[sourceId] || [];
+      for (const mid of mIds) {
+        const m = findMastery(sourceId, mid);
+        if (m && m.xpOnKill) {
+          this.player.addXp(m.xpOnKill);
+          this.stats.xpCollected += m.xpOnKill;
+          Particles.text(e.x, e.y - e.radius - 8, "+" + m.xpOnKill + " XP", "#6adcff", 12);
+        }
+      }
+    }
     Particles.burst(e.x, e.y, e.elite ? "#ff8a3d" : e.color, e.elite ? 18 : 8, e.elite ? 200 : 120, e.elite ? 5 : 3);
     if (chance(0.5)) this.audio.play("enemyDie");
     if (e.elite) {
@@ -644,7 +901,7 @@ class Game {
     boss.x = clamp(this.player.x + Math.cos(a) * d, -this.arenaHalfW + boss.radius, this.arenaHalfW - boss.radius);
     boss.y = clamp(this.player.y + Math.sin(a) * d, -this.arenaHalfH + boss.radius, this.arenaHalfH - boss.radius);
     this.boss = boss;
-    this.enemies.length = 0;
+    this.enemies = this.enemies.filter(e => e.isSpawner);
     this.cage = { x: this.player.x, y: this.player.y, radius: cageRadius };
     this.bossWarning = 2.2;
     this.audio.play("bossSpawn");
@@ -741,6 +998,8 @@ class Game {
     if (p.invulnTimer > 0) p.invulnTimer -= dt;
     if (p.overloadTimer > 0) p.overloadTimer -= dt;
     if (this.enemySlow > 0) this.enemySlow -= dt;
+    p.tickBuffs(dt);
+    if (this.interactCooldown > 0) this.interactCooldown -= dt;
 
     updateWeapons(this, dt);
     updateProjectiles(this, dt);
@@ -756,6 +1015,8 @@ class Game {
     }
 
     updateSpawner(this, dt);
+    this.updateSpawners(dt);
+    this.updateTrader(dt);
 
     this.handlePlayerProjectileCollisions();
     if (this.state !== "PLAYING") return;
@@ -799,6 +1060,14 @@ class Game {
     }
 
     this.checkLevelUp();
+
+    if (this.notice) {
+      this.notice.timer -= dt;
+      if (this.notice.timer <= 0) this.notice = null;
+    }
+
+    this.checkPOIInteraction();
+    if (this.state !== "PLAYING") return;
 
     Particles.update(dt);
     this.camera.update(dt);
@@ -911,6 +1180,7 @@ class Game {
     const enemies = this.enemies;
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
+      if (e.isSpawner) continue;
       const rr = e.radius + p.radius;
       if (dist2(e.x, e.y, p.x, p.y) < rr * rr) {
         const applied = this.hitPlayer(e.damage);
@@ -1026,6 +1296,8 @@ class Game {
       if (this.inView(e.x, e.y, halfW, halfH)) drawEnemy(ctx, e);
     }
     if (this.boss) this.boss.draw(ctx);
+    if (this.shrine && this.inView(this.shrine.x, this.shrine.y, halfW, halfH)) this.drawShrine(ctx);
+    if (this.trader && this.inView(this.trader.x, this.trader.y, halfW, halfH)) this.drawTrader(ctx);
     this.drawProjectiles(ctx, halfW, halfH);
     this.drawLightning(ctx);
     if (this.player) this.drawPlayer(ctx);
@@ -1034,6 +1306,15 @@ class Game {
     ctx.restore();
 
     this.drawVignette(ctx);
+
+    if (this.notice) {
+      ctx.globalAlpha = clamp(this.notice.timer, 0, 1);
+      ctx.fillStyle = "#ffd166";
+      ctx.font = "bold 22px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(this.notice.text, this.screenW / 2, this.screenH * 0.22);
+      ctx.globalAlpha = 1;
+    }
 
     if (this.bossWarning > 0) {
       ctx.globalAlpha = clamp(this.bossWarning, 0, 1);
@@ -1066,14 +1347,14 @@ class Game {
     const top = Math.floor((this.camera.y - halfH) / tile) * tile;
     const bottom = this.camera.y + halfH;
 
-    ctx.fillStyle = "#0b0e16";
+    ctx.fillStyle = "#12100d";
     ctx.fillRect(left, top, right - left, bottom - top);
 
     for (let x = left; x <= right; x += tile) {
       for (let y = top; y <= bottom; y += tile) {
         const v = tileHash(Math.floor(x / tile), Math.floor(y / tile));
         const shade = 0.03 + v * 0.055;
-        ctx.fillStyle = "rgba(52, 62, 84, " + shade.toFixed(4) + ")";
+        ctx.fillStyle = "rgba(96, 88, 76, " + shade.toFixed(4) + ")";
         ctx.fillRect(x, y, tile, tile);
       }
     }
@@ -1252,6 +1533,8 @@ class Game {
     const my = 76;
     const sx = size / (this.arenaHalfW * 2);
     const sy = size / (this.arenaHalfH * 2);
+    const toMapX = (x) => mx + (x + this.arenaHalfW) * sx;
+    const toMapY = (y) => my + (y + this.arenaHalfH) * sy;
 
     ctx.fillStyle = "rgba(6, 8, 16, 0.6)";
     ctx.fillRect(mx - 3, my - 3, size + 6, size + 6);
@@ -1260,29 +1543,40 @@ class Game {
     ctx.strokeRect(mx, my, size, size);
 
     if (this.boss) {
-      const bx = mx + (this.boss.x + this.arenaHalfW) * sx;
-      const by = my + (this.boss.y + this.arenaHalfH) * sy;
       ctx.fillStyle = "#ff4d8d";
       ctx.beginPath();
-      ctx.arc(bx, by, 5, 0, Math.PI * 2);
+      ctx.arc(toMapX(this.boss.x), toMapY(this.boss.y), 5, 0, Math.PI * 2);
       ctx.fill();
     }
 
     for (const e of this.enemies) {
-      if (e.elite) {
-        const ex = mx + (e.x + this.arenaHalfW) * sx;
-        const ey = my + (e.y + this.arenaHalfH) * sy;
+      if (e.isSpawner && !e.destroyed) {
         ctx.fillStyle = "#ff8a3d";
-        ctx.fillRect(ex - 1, ey - 1, 3, 3);
+        ctx.fillRect(toMapX(e.x) - 3, toMapY(e.y) - 3, 6, 6);
+      } else if (e.elite && e.type === "tank") {
+        ctx.fillStyle = "#ff8a3d";
+        ctx.fillRect(toMapX(e.x) - 1, toMapY(e.y) - 1, 3, 3);
       }
     }
 
+    if (this.shrine) {
+      ctx.fillStyle = "#ffd166";
+      ctx.fillRect(toMapX(this.shrine.x) - 3, toMapY(this.shrine.y) - 3, 6, 6);
+    }
+    if (this.trader) {
+      ctx.fillStyle = "#e8ecf8";
+      ctx.fillRect(toMapX(this.trader.x) - 3, toMapY(this.trader.y) - 3, 6, 6);
+    }
+
+    ctx.fillStyle = "#e55dff";
+    for (const m of this.magnets) ctx.fillRect(toMapX(m.x) - 1, toMapY(m.y) - 1, 2, 2);
+    ctx.fillStyle = "#6dff9a";
+    for (const h of this.heals) ctx.fillRect(toMapX(h.x) - 1, toMapY(h.y) - 1, 2, 2);
+
     if (this.player) {
-      const px = mx + (this.player.x + this.arenaHalfW) * sx;
-      const py = my + (this.player.y + this.arenaHalfH) * sy;
       ctx.fillStyle = "#39d0ff";
       ctx.beginPath();
-      ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.arc(toMapX(this.player.x), toMapY(this.player.y), 4, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -1391,6 +1685,56 @@ class Game {
     ctx.beginPath();
     ctx.arc(-r * 0.3, -r * 0.3, r * 0.3, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+  }
+
+  drawShrine(ctx) {
+    const s = this.shrine;
+    const r = s.radius;
+    const pulse = 0.6 + Math.sin(performance.now() / 400) * 0.3;
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.fillStyle = "#3a2a10";
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#ffd166";
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = pulse;
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffd166";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.55);
+    ctx.lineTo(r * 0.45, 0);
+    ctx.lineTo(0, r * 0.55);
+    ctx.lineTo(-r * 0.45, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  drawTrader(ctx) {
+    const t = this.trader;
+    const r = t.radius;
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.fillStyle = "#2f4a3a";
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#6dff9a";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#e8ecf8";
+    ctx.font = "bold " + Math.round(r * 1.1) + "px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🏪", 0, 2);
     ctx.restore();
   }
 

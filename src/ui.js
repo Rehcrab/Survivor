@@ -69,9 +69,10 @@ const UI = {
       "canvas", "hud", "hp-fill", "hp-text", "xp-fill", "level-badge", "timer",
       "pause-btn", "speed-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
-      "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop",
+      "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader",
       "upgrade-cards", "stats-gameover", "stats-victory", "best-score", "menu-gold",
       "loadout-grid", "account-grid", "weapon-upgrades-grid", "shop-gold",
+      "shrine-gold", "shrine-blessings", "trader-gold", "trader-items",
       "pause-weapons", "pause-passives", "build-tooltip", "btn-reroll", "delete-count",
     ];
     ids.forEach(id => { this.el[id] = document.getElementById(id); });
@@ -79,7 +80,7 @@ const UI = {
 
   hideAll() {
     this.hideTooltip();
-    ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop"].forEach(id => {
+    ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader"].forEach(id => {
       this.el[id].classList.add("hidden");
     });
   },
@@ -319,6 +320,8 @@ const UI = {
     document.getElementById("btn-howto-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); });
     document.getElementById("btn-shop").addEventListener("click", () => { AudioMan.play("click"); this.showShop(game); });
     document.getElementById("btn-shop-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); this.updateGold(); });
+    document.getElementById("btn-shrine-close").addEventListener("click", () => game.closeShop());
+    document.getElementById("btn-trader-close").addEventListener("click", () => game.closeShop());
 
     document.getElementById("btn-resume").addEventListener("click", () => game.resume());
     document.getElementById("btn-restart").addEventListener("click", () => game.startRun());
@@ -485,5 +488,54 @@ const UI = {
     Settings.startingWeapon = id;
     Settings.save();
     this.showShop(game);
+  },
+
+  showShrine(game) {
+    const cost = game.shrineCost();
+    if (this.el["shrine-gold"]) this.el["shrine-gold"].textContent = "GOLD: " + Settings.gold + " · COST: " + cost;
+    const container = this.el["shrine-blessings"];
+    container.innerHTML = "";
+    for (const b of CONFIG.shrine.blessings) {
+      const card = document.createElement("div");
+      card.className = "upgrade-card";
+      card.innerHTML =
+        '<div class="u-icon">' + b.icon + '</div>' +
+        '<div class="u-body"><div class="u-name">' + b.name + '</div>' +
+        '<div class="u-desc">' + b.description + '</div></div>';
+      card.addEventListener("click", () => {
+        if (Settings.gold < game.shrineCost()) return;
+        game.shrineBless(b);
+        this.showShrine(game);
+      });
+      if (Settings.gold < cost) card.style.opacity = "0.5";
+      container.appendChild(card);
+    }
+    this.show("shrine");
+  },
+
+  showTrader(game) {
+    if (!game.trader.inventory || !game.trader.inventory.length) {
+      game.trader.inventory = game.generateTraderInventory();
+    }
+    if (this.el["trader-gold"]) this.el["trader-gold"].textContent = "GOLD: " + Settings.gold;
+    const container = this.el["trader-items"];
+    container.innerHTML = "";
+    for (const item of game.trader.inventory) {
+      const card = document.createElement("div");
+      card.className = "upgrade-card";
+      card.innerHTML =
+        '<div class="u-icon">' + item.icon + '</div>' +
+        '<div class="u-body"><div class="u-name">' + item.name + '</div>' +
+        '<div class="u-desc">' + item.description + '</div>' +
+        '<div class="u-level">' + item.cost + " gold</div></div>";
+      card.addEventListener("click", () => {
+        if (Settings.gold < item.cost) return;
+        game.traderBuy(item);
+        this.showTrader(game);
+      });
+      if (Settings.gold < item.cost) card.style.opacity = "0.5";
+      container.appendChild(card);
+    }
+    this.show("trader");
   },
 };

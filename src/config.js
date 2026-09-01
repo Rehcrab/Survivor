@@ -95,6 +95,122 @@ const CONFIG = {
     scoreBoss: 500,
   },
 
+  world: {
+    zoneEasy: 0.4,
+    zoneMedium: 0.7,
+  },
+
+  spawners: {
+    count: 6,
+    spawnInterval: 4000,
+    easyHp: 1500,
+    mediumHp: 3200,
+    hardHp: 6000,
+    xpReward: 150,
+    goldReward: 50,
+    radius: 30,
+  },
+
+  shrine: {
+    radius: 42,
+    baseCost: 100,
+    costMult: 2,
+    blessings: [
+      { id: "might", name: "Might", icon: "⚔️", description: "+10% damage", apply: "damage", value: 0.10 },
+      { id: "haste", name: "Haste", icon: "💨", description: "+10% move speed", apply: "speed", value: 0.10 },
+      { id: "vitality", name: "Vitality", icon: "❤️", description: "+20 max HP", apply: "hp", value: 20 },
+      { id: "precision", name: "Precision", icon: "🎯", description: "+5% crit chance", apply: "crit", value: 0.05 },
+      { id: "magnetism", name: "Magnetism", icon: "🧲", description: "+25 pickup radius", apply: "pickup", value: 25 },
+    ],
+  },
+
+  trader: {
+    radius: 30,
+    speed: 45,
+    restockMin: 180,
+    restockMax: 300,
+    rerollCost: 150,
+    deleteCost: 200,
+    healCost: 120,
+    slotBaseCost: 1000,
+    slotCostMult: 2.5,
+    buffCost: 220,
+    buffDuration: 180,
+    buffs: [
+      { id: "overcharge", name: "Overcharge", icon: "⚔️", description: "+20% damage for 3 min", apply: "damage", value: 0.20 },
+      { id: "rapidfire", name: "Rapid Fire", icon: "🚀", description: "-15% cooldown for 3 min", apply: "cooldown", value: 0.15 },
+      { id: "adrenaline", name: "Adrenaline", icon: "💨", description: "+20% speed for 3 min", apply: "speed", value: 0.20 },
+      { id: "magnet_pulse", name: "Magnet Pulse", icon: "🧲", description: "+50 pickup for 3 min", apply: "pickup", value: 50 },
+    ],
+  },
+
+  mastery: {
+    cost: 400,
+    maxPerWeapon: 3,
+  },
+
+  masteries: {
+    magic_bolt: [
+      { id: "split_shot", name: "Split Shot", icon: "✨", cost: 400, description: "+1 bolt per volley", add: { projectileCount: 1 } },
+      { id: "deep_wound", name: "Deep Wound", icon: "🎯", cost: 400, description: "+25% bolt damage", mult: { damage: 0.25 } },
+      { id: "overpierce", name: "Overpierce", icon: "💫", cost: 400, description: "+2 pierce", add: { pierce: 2 } },
+    ],
+    fireball: [
+      { id: "twin_flames", name: "Twin Flames", icon: "🔥", cost: 400, description: "+1 fireball", add: { projectileCount: 1 } },
+      { id: "inferno", name: "Inferno", icon: "💥", cost: 400, description: "+30% explosion radius", mult: { explosionRadius: 0.3 } },
+      { id: "scorched_earth", name: "Scorched Earth", icon: "☄️", cost: 400, description: "Kills drop +15 XP", xpOnKill: 15 },
+    ],
+    blades: [
+      { id: "razorwind", name: "Razorwind", icon: "⚔️", cost: 400, description: "+25% blade damage", mult: { damage: 0.25 } },
+      { id: "expanding_vortex", name: "Expanding Vortex", icon: "🌀", cost: 400, description: "+20% orbit radius", mult: { orbitRadius: 0.2 } },
+      { id: "cyclone", name: "Cyclone", icon: "🌪️", cost: 400, description: "+1 blade", add: { bladeCount: 1 } },
+    ],
+    lightning: [
+      { id: "arc_surge", name: "Arc Surge", icon: "⚡", cost: 400, description: "+1 chain", add: { chainCount: 1 } },
+      { id: "overcharged", name: "Overcharged Storm", icon: "🌩️", cost: 400, description: "+1 strike", add: { strikeCount: 1 } },
+      { id: "static_harvest", name: "Static Harvest", icon: "💛", cost: 400, description: "Kills drop +15 XP", xpOnKill: 15 },
+    ],
+    boomerang: [
+      { id: "glaive_storm", name: "Glaive Storm", icon: "🪃", cost: 400, description: "+1 boomerang", add: { projectileCount: 1 } },
+      { id: "keen_edge", name: "Keen Edge", icon: "🗡️", cost: 400, description: "+25% damage", mult: { damage: 0.25 } },
+      { id: "deep_pierce", name: "Deep Pierce", icon: "💠", cost: 400, description: "+4 pierce", add: { pierce: 4 } },
+    ],
+    nova: [
+      { id: "shockwave", name: "Shockwave", icon: "💥", cost: 400, description: "+20% radius", mult: { radius: 0.2 } },
+      { id: "concussion", name: "Concussion", icon: "🪨", cost: 400, description: "+250 knockback", add: { knockback: 250 } },
+      { id: "aftershock", name: "Aftershock", icon: "🌊", cost: 400, description: "-20% cooldown", mult: { cooldown: -0.2 } },
+    ],
+    aura: [
+      { id: "searing", name: "Searing", icon: "🔮", cost: 400, description: "+25% aura damage", mult: { damage: 0.25 } },
+      { id: "wide_field", name: "Wide Field", icon: "🌐", cost: 400, description: "+20% radius", mult: { radius: 0.2 } },
+      { id: "soothing", name: "Soothing", icon: "💚", cost: 400, description: "+1 heal per tick", add: { heal: 1 } },
+    ],
+    deflector: [
+      { id: "overclock", name: "Overclock", icon: "💠", cost: 400, description: "+5 cleared", add: { maxClear: 5 } },
+      { id: "wide_net", name: "Wide Net", icon: "🕸️", cost: 400, description: "+20% radius", mult: { radius: 0.2 } },
+      { id: "quick_pulse", name: "Quick Pulse", icon: "⏱️", cost: 400, description: "-20% cooldown", mult: { cooldown: -0.2 } },
+    ],
+    plasma: [
+      { id: "volatile", name: "Volatile", icon: "🫧", cost: 400, description: "+2 bounces", add: { bounces: 2 } },
+      { id: "hot_plasma", name: "Hot Plasma", icon: "🔥", cost: 400, description: "+25% damage", mult: { damage: 0.25 } },
+      { id: "splitting", name: "Splitting", icon: "🧬", cost: 400, description: "+1 orb", add: { projectileCount: 1 } },
+    ],
+  },
+
+  reroll: {
+    startRerolls: 2,
+    startDeletes: 1,
+  },
+
+  progression: [
+    { time: 1500, type: "warden", weight: 1 },
+    { time: 1800, type: "tyrant", weight: 1 },
+    { time: 1800, type: "warden", weight: 2 },
+    { time: 2400, type: "leviathan", weight: 1 },
+    { time: 2400, type: "tyrant", weight: 2 },
+    { time: 2400, type: "overlord", weight: 1 },
+  ],
+
   arena: {
     gridSize: 90,
     decorCount: 110,
@@ -119,6 +235,10 @@ const CONFIG = {
     tank: { name: "Tank", hp: 185, speed: 55, damage: 18, radius: 22, xp: 20, color: "#a06bff", knockbackResist: 0.5 },
     ranged: { name: "Ranged", hp: 50, speed: 92, damage: 12, radius: 13, xp: 12, color: "#ff6b6b", ranged: true, fireCooldown: 2200, projSpeed: 240, projDamage: 10 },
     swarm: { name: "Swarm", hp: 12, speed: 112, damage: 5, radius: 9, xp: 3, color: "#ff7ad9" },
+    warden: { name: "Warden", hp: 1500, speed: 70, damage: 24, radius: 30, xp: 120, color: "#ff4d8d" },
+    tyrant: { name: "Tyrant", hp: 3000, speed: 80, damage: 30, radius: 34, xp: 180, color: "#b04dff" },
+    leviathan: { name: "Leviathan", hp: 5000, speed: 75, damage: 36, radius: 38, xp: 260, color: "#3dd0c0" },
+    overlord: { name: "Overlord", hp: 8000, speed: 85, damage: 42, radius: 44, xp: 350, color: "#ff3d8d" },
   },
 
   elite: {

@@ -15,23 +15,38 @@ class Player {
     this.overflowDamage = 0;
     this.overflowSpeed = 0;
     this.overloadTimer = 0;
+    this.bonusDamage = 0;
+    this.bonusSpeed = 0;
+    this.bonusHp = 0;
+    this.bonusCrit = 0;
+    this.bonusPickup = 0;
+    this.runWeaponSlots = 0;
+    this.runPassiveSlots = 0;
+    this.tempBuffs = {
+      damage: { timer: 0, value: 0 },
+      speed: { timer: 0, value: 0 },
+      cooldown: { timer: 0, value: 0 },
+      pickup: { timer: 0, value: 0 },
+    };
     this.hp = this.maxHp;
   }
 
   get maxHp() {
-    return CONFIG.player.maxHp + this.toughnessLevel * 30 + Settings.accountRank("start_hp") * 25 + this.overflowHp;
+    return CONFIG.player.maxHp + this.toughnessLevel * 30 + Settings.accountRank("start_hp") * 25 + this.overflowHp + this.bonusHp;
   }
 
   get speed() {
-    return CONFIG.player.speed * (1 + this.swiftFeetLevel * 0.12) * (1 + this.overflowSpeed);
+    const temp = this.tempBuffs.speed.timer > 0 ? this.tempBuffs.speed.value : 0;
+    return CONFIG.player.speed * (1 + this.swiftFeetLevel * 0.12) * (1 + this.overflowSpeed + this.bonusSpeed + temp);
   }
 
   get pickupRadius() {
-    return CONFIG.player.basePickupRadius * (1 + this.magnetLevel * 0.4);
+    const temp = this.tempBuffs.pickup.timer > 0 ? this.tempBuffs.pickup.value : 0;
+    return CONFIG.player.basePickupRadius * (1 + this.magnetLevel * 0.4) + this.bonusPickup + temp;
   }
 
   get critChance() {
-    return CONFIG.player.baseCritChance + this.criticalLevel * 0.08 + Settings.accountRank("crit_chance") * 0.05;
+    return CONFIG.player.baseCritChance + this.criticalLevel * 0.08 + Settings.accountRank("crit_chance") * 0.05 + this.bonusCrit;
   }
 
   get critDamage() {
@@ -39,11 +54,11 @@ class Player {
   }
 
   get maxWeapons() {
-    return CONFIG.player.maxWeapons + (Settings.accountRank("weapon_slot") > 0 ? 1 : 0);
+    return CONFIG.player.maxWeapons + (Settings.accountRank("weapon_slot") > 0 ? 1 : 0) + this.runWeaponSlots;
   }
 
   get maxPassives() {
-    return CONFIG.player.maxPassives + (Settings.accountRank("passive_slot") > 0 ? 1 : 0);
+    return CONFIG.player.maxPassives + (Settings.accountRank("passive_slot") > 0 ? 1 : 0) + this.runPassiveSlots;
   }
 
   get xpMult() {
@@ -51,7 +66,8 @@ class Player {
   }
 
   get cooldownMult() {
-    return 1 - this.overdriveLevel * 0.08;
+    const temp = this.tempBuffs.cooldown.timer > 0 ? (1 - this.tempBuffs.cooldown.value) : 1;
+    return (1 - this.overdriveLevel * 0.08) * temp;
   }
 
   get rangeMult() {
@@ -77,12 +93,19 @@ class Player {
   }
 
   damageMultiplier() {
-    let m = 1 + this.overflowDamage;
+    let m = 1 + this.overflowDamage + this.bonusDamage;
+    if (this.tempBuffs.damage.timer > 0) m += this.tempBuffs.damage.value;
     if (this.overloadTimer > 0) m *= 2;
     if (this.berserkerLevel > 0 && this.hp <= this.maxHp * 0.3) {
       m *= 1 + this.berserkerLevel * 0.2;
     }
     return m;
+  }
+
+  tickBuffs(dt) {
+    for (const k in this.tempBuffs) {
+      if (this.tempBuffs[k].timer > 0) this.tempBuffs[k].timer -= dt;
+    }
   }
 
   applyMaxHpChange() {
