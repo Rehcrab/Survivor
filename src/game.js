@@ -560,10 +560,26 @@ class Game {
     const b = this.boss;
     const crit = chance(this.player.critChance);
     const dmg = baseDamage * this.player.damageMultiplier() * (crit ? this.player.critDamage : 1);
-    b.hp -= dmg;
     b.hitFlash = 0.08;
     this.stats.damageDealt += dmg;
     this.trackDamage(sourceId, dmg);
+
+    if (b.shieldActive && b.shield > 0) {
+      b.shield -= dmg;
+      if (b.shield <= 0) {
+        b.shield = 0;
+        b.shieldActive = false;
+        b.shieldTimer = 8;
+        Particles.ring(b.x, b.y, "#c9d6ff", b.radius * 2, 0.45, 5);
+        Particles.burst(b.x, b.y, "#c9d6ff", 22, 260, 5);
+        this.audio.play("nova");
+      }
+      if (crit) Particles.text(b.x, b.y - b.radius - 10, "shield!", "#c9d6ff", 16);
+      else if (chance(0.2)) Particles.text(b.x, b.y - b.radius - 10, Math.round(dmg), "#c9d6ff", 13);
+      return;
+    }
+
+    b.hp -= dmg;
     if (crit) Particles.text(b.x, b.y - b.radius - 10, Math.round(dmg) + "!", "#ffd166", 18);
     else Particles.text(b.x, b.y - b.radius - 10, Math.round(dmg), "#e8ecf8", 13);
     if (b.hp <= 0) this.killBoss();

@@ -453,19 +453,19 @@ const CONFIG = {
 
   bosses: {
     warden: {
-      name: "Ruins Warden", radius: 46, hp: 4500, speed: 75, damage: 26, xp: 400, color: "#ff4d8d", tier: 1,
+      name: "Ruins Warden", radius: 46, hp: 4500, speed: 75, damage: 26, xp: 400, color: "#ff4d8d", tier: 1, special: "shield",
       attacks: { burst: true, charge: true, summon: true },
     },
     tyrant: {
-      name: "Void Tyrant", radius: 54, hp: 9000, speed: 85, damage: 32, xp: 600, color: "#b04dff", tier: 2,
+      name: "Void Tyrant", radius: 54, hp: 9000, speed: 85, damage: 32, xp: 600, color: "#b04dff", tier: 2, special: "zone",
       attacks: { burst: true, charge: true, summon: true },
     },
     leviathan: {
-      name: "Abyss Leviathan", radius: 62, hp: 16000, speed: 80, damage: 38, xp: 900, color: "#3dd0c0", tier: 3,
+      name: "Abyss Leviathan", radius: 62, hp: 16000, speed: 80, damage: 38, xp: 900, color: "#3dd0c0", tier: 3, special: "gravity",
       attacks: { burst: true, charge: true, summon: true },
     },
     overlord: {
-      name: "Void Overlord", radius: 70, hp: 26000, speed: 95, damage: 44, xp: 1200, color: "#ff3d8d", tier: 4, final: true,
+      name: "Void Overlord", radius: 70, hp: 26000, speed: 95, damage: 44, xp: 1200, color: "#ff3d8d", tier: 4, final: true, special: "phase",
       attacks: { burst: true, charge: true, summon: true },
     },
   },

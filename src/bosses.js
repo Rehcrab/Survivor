@@ -14,6 +14,7 @@ class Boss {
     this.attacks = cfg.attacks;
     this.final = cfg.final || false;
     this.tier = cfg.tier || 1;
+    this.special = cfg.special || null;
     this.state = "approach";
     this.stateTimer = 1.0;
     this.pendingAttack = null;
@@ -27,6 +28,17 @@ class Boss {
     this.lastBladeHit = [];
     this.lastBoomHit = 0;
     this.id = "boss";
+
+    // special ability state
+    this.shieldActive = false;
+    this.shield = 0;
+    this.shieldTimer = 3;
+    this.dangerZones = [];
+    this.zoneTimer = 4;
+    this.gravityTimer = 6;
+    this.gravityPulse = 0;
+    this.portalPairs = [];
+    this.portalTimer = 5;
   }
 
   placeNear(game) {
@@ -135,6 +147,104 @@ class Boss {
         break;
       }
     }
+
+    this.updateSpecial(game, dt);
+  }
+
+  updateSpecial(game, dt) {
+    const p = game.player;
+    switch (this.special) {
+      case "shield": {
+        if (!this.shieldActive) {
+          this.shieldTimer -= dt;
+          if (this.shieldTimer <= 0) {
+            this.shieldActive = true;
+            this.shield = this.maxHp * 0.22;
+            Particles.ring(this.x, this.y, "#c9d6ff", this.radius * 1.5, 0.45, 5);
+            game.audio.play("nova");
+          }
+        }
+        break;
+      }
+      case "zone": {
+        this.zoneTimer -= dt;
+        if (this.zoneTimer <= 0) {
+          this.zoneTimer = rand(4, 6);
+          const count = this.phase() >= 2 ? 5 : 3;
+          for (let i = 0; i < count; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const d = rand(60, this.radius * 3.5);
+            this.dangerZones.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, radius: rand(46, 70), state: "telegraph", timer: 1.0, tick: 0 });
+          }
+        }
+        for (let i = this.dangerZones.length - 1; i >= 0; i--) {
+          const z = this.dangerZones[i];
+          z.timer -= dt;
+          if (z.state === "telegraph") {
+            if (z.timer <= 0) { z.state = "active"; z.timer = 3.0; z.tick = 0; }
+          } else {
+            if (dist2(p.x, p.y, z.x, z.y) < z.radius * z.radius) {
+              z.tick -= dt;
+              if (z.tick <= 0) { z.tick = 0.5; game.hitPlayer(this.damage * 0.6); }
+            }
+            if (z.timer <= 0) this.dangerZones.splice(i, 1);
+          }
+        }
+        break;
+      }
+      case "gravity": {
+        if (this.gravityPulse > 0) {
+          this.gravityPulse -= dt;
+          if (this.gravityPulse > 0.5) {
+            const a = angleTo(p.x, p.y, this.x, this.y);
+            p.x += Math.cos(a) * 110 * dt;
+            p.y += Math.sin(a) * 110 * dt;
+          }
+        } else {
+          this.gravityTimer -= dt;
+          if (this.gravityTimer <= 0) {
+            this.gravityTimer = rand(6, 9);
+            this.gravityPulse = 2.0;
+            game.audio.play("bossSpawn");
+          }
+        }
+        break;
+      }
+      case "phase": {
+        if (this.phase() >= 3) {
+          this.portalTimer -= dt;
+          if (this.portalTimer <= 0) {
+            this.portalTimer = rand(4, 6);
+            if (game.cage) {
+              const a1 = Math.random() * Math.PI * 2;
+              const a2 = a1 + Math.PI * 0.5;
+              const d = game.cage.radius * 0.55;
+              this.portalPairs.push({
+                x1: game.cage.x + Math.cos(a1) * d, y1: game.cage.y + Math.sin(a1) * d,
+                x2: game.cage.x + Math.cos(a2) * d, y2: game.cage.y + Math.sin(a2) * d,
+                timer: 7,
+              });
+            }
+          }
+        }
+        for (let i = this.portalPairs.length - 1; i >= 0; i--) {
+          const pp = this.portalPairs[i];
+          pp.timer -= dt;
+          const rr = 26 * 26;
+          if (dist2(p.x, p.y, pp.x1, pp.y1) < rr) {
+            p.x = pp.x2; p.y = pp.y2;
+            pp.timer = 0;
+            Particles.ring(p.x, p.y, "#ff3d8d", 30, 0.3, 4);
+          } else if (dist2(p.x, p.y, pp.x2, pp.y2) < rr) {
+            p.x = pp.x1; p.y = pp.y1;
+            pp.timer = 0;
+            Particles.ring(p.x, p.y, "#ff3d8d", 30, 0.3, 4);
+          }
+          if (pp.timer <= 0) this.portalPairs.splice(i, 1);
+        }
+        break;
+      }
+    }
   }
 
   beginAttack(game) {
@@ -180,6 +290,7 @@ class Boss {
     const count = ph === 3 ? 6 : 5;
     const mult = difficultyMult(game);
     const hpMult = mult.hp * CONFIG.bossArena.minionHpMult;
+    const isOverlord = this.special === "phase";
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2;
       const x = this.x + Math.cos(a) * (this.radius + 30);
@@ -187,7 +298,11 @@ class Boss {
       let type = "basic";
       if (ph === 2) type = pick(["tank", "tank", "basic"]);
       else type = pick(["tank", "tank", "tank", "basic"]);
-      const elite = ph === 3 && chance(0.35);
+      let elite = ph === 3 && chance(0.35);
+      if (isOverlord && ph >= 2) {
+        type = "tank";
+        elite = ph === 3 ? chance(0.7) : chance(0.3);
+      }
       const m = createEnemy(type, x, y, { hpMult, dmgMult: mult.dmg, speedMult: mult.speed, elite });
       m.isBossMinion = true;
       game.enemies.push(m);
@@ -250,7 +365,83 @@ class Boss {
       ctx.fill();
     }
 
+    if (this.shieldActive && this.shield > 0) {
+      ctx.strokeStyle = "#c9d6ff";
+      ctx.lineWidth = 5;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 14, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
     ctx.restore();
+    this.drawSpecial(ctx);
+  }
+
+  drawSpecial(ctx) {
+    for (const z of this.dangerZones) {
+      if (z.state === "telegraph") {
+        ctx.strokeStyle = "rgba(255, 77, 109, 0.7)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = "rgba(255, 77, 109, 0.35)";
+        ctx.beginPath();
+        ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 77, 109, 0.7)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    if (this.gravityPulse > 0.5) {
+      ctx.strokeStyle = "rgba(120, 220, 255, 0.4)";
+      ctx.fillStyle = "rgba(120, 220, 255, 0.4)";
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + this.spin * 0.5;
+        const d = this.radius + 70;
+        const ax = this.x + Math.cos(a) * d;
+        const ay = this.y + Math.sin(a) * d;
+        const dir = angleTo(ax, ay, this.x, this.y);
+        ctx.beginPath();
+        ctx.moveTo(ax - Math.cos(dir) * 14, ay - Math.sin(dir) * 14);
+        ctx.lineTo(ax + Math.cos(dir) * 6, ay + Math.sin(dir) * 6);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ax + Math.cos(dir) * 16, ay + Math.sin(dir) * 16);
+        ctx.lineTo(ax + Math.cos(dir + 2.6) * 12, ay + Math.sin(dir + 2.6) * 12);
+        ctx.lineTo(ax + Math.cos(dir - 2.6) * 12, ay + Math.sin(dir - 2.6) * 12);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    for (const pp of this.portalPairs) {
+      this.drawPortal(ctx, pp.x1, pp.y1);
+      this.drawPortal(ctx, pp.x2, pp.y2);
+    }
+  }
+
+  drawPortal(ctx, x, y) {
+    ctx.strokeStyle = "#ff3d8d";
+    ctx.lineWidth = 3;
+    ctx.shadowColor = "#ff3d8d";
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(x, y, 24, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(255, 61, 141, 0.15)";
+    ctx.beginPath();
+    ctx.arc(x, y, 24, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
