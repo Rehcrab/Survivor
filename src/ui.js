@@ -236,6 +236,10 @@ const UI = {
     const def = weaponDef(w.id);
     let html = '<div class="tip-name">' + def.icon + " " + def.name + "</div>";
     html += '<div class="tip-level">Level ' + w.level + " / " + def.maxLevel + "</div>";
+    if (w.id === "boomerang") {
+      const rm = boomerangReturnMult(w);
+      html += '<div class="tip-return">Return Damage: ' + (rm % 1 === 0 ? rm.toFixed(0) : rm.toFixed(1)) + "x</div>";
+    }
     if (w.evolved && def.evo) {
       html += '<div class="tip-evo">' + def.evo.icon + " " + def.evo.name + "</div>";
     }
