@@ -96,16 +96,16 @@ const CONFIG = {
   },
 
   world: {
-    zoneEasy: 0.4,
-    zoneMedium: 0.7,
+    zoneHard: 0.35,
+    zoneMedium: 0.62,
   },
 
   spawners: {
     count: 6,
     spawnInterval: 4000,
-    easyHp: 1500,
-    mediumHp: 3200,
-    hardHp: 6000,
+    easyHp: 4000,
+    mediumHp: 10000,
+    hardHp: 20000,
     xpReward: 150,
     goldReward: 50,
     radius: 30,

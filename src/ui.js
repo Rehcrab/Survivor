@@ -517,7 +517,9 @@ const UI = {
     if (!game.trader.inventory || !game.trader.inventory.length) {
       game.trader.inventory = game.generateTraderInventory();
     }
-    if (this.el["trader-gold"]) this.el["trader-gold"].textContent = "GOLD: " + Settings.gold;
+    if (this.el["trader-gold"]) {
+      this.el["trader-gold"].textContent = "GOLD: " + Settings.gold + " · RESTOCKS AT " + formatTime(game.time + game.trader.restockTimer);
+    }
     const container = this.el["trader-items"];
     container.innerHTML = "";
     for (const item of game.trader.inventory) {

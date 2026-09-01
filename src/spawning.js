@@ -46,11 +46,13 @@ function chooseEnemyType(game) {
 }
 
 function zoneAt(game, x, y) {
-  const d = Math.hypot(x, y);
-  const r = Math.hypot(game.arenaHalfW, game.arenaHalfH);
-  if (d < r * CONFIG.world.zoneEasy) return "easy";
-  if (d < r * CONFIG.world.zoneMedium) return "medium";
-  return "hard";
+  const cx = game.arenaHalfW, cy = -game.arenaHalfH;
+  const d = Math.hypot(x - cx, y - cy);
+  const diag = Math.hypot(game.arenaHalfW * 2, game.arenaHalfH * 2);
+  const t = d / diag;
+  if (t < CONFIG.world.zoneHard) return "hard";
+  if (t < CONFIG.world.zoneMedium) return "medium";
+  return "easy";
 }
 
 function zoneModifiers(zone) {
@@ -63,11 +65,14 @@ function zoneModifiers(zone) {
 }
 
 function spawnerEnemyType(game, zone) {
-  const pool = zone === "easy"
-    ? [["basic", 8], ["runner", 2]]
-    : zone === "medium"
-      ? [["basic", 5], ["runner", 3], ["tank", 2], ["swarm", 2], ["ranged", 1]]
-      : [["tank", 4], ["ranged", 3], ["runner", 3], ["swarm", 3], ["basic", 2]];
+  const m = game.time / 60;
+  const intro = zone === "hard" ? 0.6 : zone === "medium" ? 0.8 : 1;
+  const hardBonus = zone === "hard" ? 3 : zone === "medium" ? 1 : 0;
+  const pool = [["basic", 10]];
+  if (m >= 0.8 * intro) pool.push(["runner", 3]);
+  if (m >= 2 * intro) pool.push(["swarm", 2]);
+  if (m >= 2.5 * intro) pool.push(["tank", 2 + hardBonus]);
+  if (m >= 3.5 * intro) pool.push(["ranged", 2 + hardBonus]);
   let total = 0;
   for (const p of pool) total += p[1];
   let r = Math.random() * total;

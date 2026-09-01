@@ -66,6 +66,7 @@ class Game {
     this.trader = null;
     this.masteries = {};
     this.interactCooldown = 0;
+    this.interactable = null;
     this.notice = null;
     this.resetStats();
   }
@@ -167,13 +168,15 @@ class Game {
   }
 
   createShrine() {
+    const cx = this.arenaHalfW * 0.8, cy = -this.arenaHalfH * 0.8;
     const a = Math.random() * Math.PI * 2;
-    const baseR = Math.hypot(this.arenaHalfW, this.arenaHalfH) * 0.8;
-    const r = baseR * rand(0.9, 1.05);
+    const r = Math.min(this.arenaHalfW, this.arenaHalfH) * 0.18;
+    const x = clamp(cx + Math.cos(a) * r, -this.arenaHalfW + 50, this.arenaHalfW - 50);
+    const y = clamp(cy + Math.sin(a) * r, -this.arenaHalfH + 50, this.arenaHalfH - 50);
     this.shrine = {
       id: "shrine", type: "shrine",
-      x: Math.cos(a) * r,
-      y: Math.sin(a) * r,
+      x: x,
+      y: y,
       radius: CONFIG.shrine.radius,
       uses: 0,
     };
@@ -181,11 +184,13 @@ class Game {
 
   createTrader() {
     const a = Math.random() * Math.PI * 2;
-    const r = this.arenaHalfW * 0.35 * rand(0.5, 1);
+    const r = Math.min(this.arenaHalfW, this.arenaHalfH) * 0.35 * rand(0.5, 1);
+    const x = clamp(Math.cos(a) * r, -this.arenaHalfW + 40, this.arenaHalfW - 40);
+    const y = clamp(Math.sin(a) * r, -this.arenaHalfH + 40, this.arenaHalfH - 40);
     this.trader = {
       id: "trader", type: "trader",
-      x: Math.cos(a) * r,
-      y: Math.sin(a) * r,
+      x: x,
+      y: y,
       radius: CONFIG.trader.radius,
       dirX: 1, dirY: 0,
       changeTimer: rand(2, 5),
@@ -321,13 +326,22 @@ class Game {
     this.audio.play("levelup");
   }
 
-  checkPOIInteraction() {
-    if (this.interactCooldown > 0) return;
+  updateInteractable() {
+    this.interactable = null;
     const p = this.player;
-    if (this.shrine && dist(p.x, p.y, this.shrine.x, this.shrine.y) < this.shrine.radius + p.radius + 6) {
+    if (this.shrine && dist(p.x, p.y, this.shrine.x, this.shrine.y) < this.shrine.radius + p.radius + 12) {
+      this.interactable = "shrine";
+    } else if (this.trader && dist(p.x, p.y, this.trader.x, this.trader.y) < this.trader.radius + p.radius + 12) {
+      this.interactable = "trader";
+    }
+  }
+
+  tryInteract() {
+    if (this.state !== "PLAYING" || this.interactCooldown > 0) return;
+    if (this.interactable === "shrine") {
       this.state = "SHRINE";
       UI.showShrine(this);
-    } else if (this.trader && dist(p.x, p.y, this.trader.x, this.trader.y) < this.trader.radius + p.radius + 6) {
+    } else if (this.interactable === "trader") {
       this.state = "TRADER";
       UI.showTrader(this);
     }
@@ -336,7 +350,7 @@ class Game {
   closeShop() {
     this.state = "PLAYING";
     UI.hideAll();
-    this.interactCooldown = 2;
+    this.interactCooldown = 1;
   }
 
   startRun() {
@@ -1066,8 +1080,7 @@ class Game {
       if (this.notice.timer <= 0) this.notice = null;
     }
 
-    this.checkPOIInteraction();
-    if (this.state !== "PLAYING") return;
+    this.updateInteractable();
 
     Particles.update(dt);
     this.camera.update(dt);
@@ -1274,6 +1287,7 @@ class Game {
 
     this.drawBackground(ctx, halfW, halfH);
     this.drawArenaBorder(ctx);
+    if (Input.altHeld()) this.drawZones(ctx);
     for (const d of this.decor) {
       if (this.inView(d.x, d.y, halfW, halfH)) this.drawDecorItem(ctx, d);
     }
@@ -1306,6 +1320,17 @@ class Game {
     ctx.restore();
 
     this.drawVignette(ctx);
+
+    if (this.interactable && this.state === "PLAYING") {
+      ctx.fillStyle = "#e8ecf8";
+      ctx.font = "bold 18px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Press E to " + (this.interactable === "shrine" ? "use the shrine" : "trade"), this.screenW / 2, this.screenH * 0.66);
+    }
+
+    if (this.player && this.state !== "MENU") {
+      this.drawBuffBars(ctx);
+    }
 
     if (this.notice) {
       ctx.globalAlpha = clamp(this.notice.timer, 0, 1);
@@ -1401,6 +1426,63 @@ class Game {
     g.addColorStop(1, "rgba(0,0,0,0.42)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
+  }
+
+  drawZones(ctx) {
+    const cx = this.arenaHalfW, cy = -this.arenaHalfH;
+    const diag = Math.hypot(this.arenaHalfW * 2, this.arenaHalfH * 2);
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 209, 102, 0.10)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, diag * CONFIG.world.zoneMedium, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 77, 109, 0.18)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, diag * CONFIG.world.zoneHard, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  getActiveBuffs() {
+    if (!this.player) return [];
+    const buffs = [];
+    const p = this.player;
+    const defs = {};
+    for (const b of CONFIG.trader.buffs) defs[b.apply] = b;
+    for (const key in p.tempBuffs) {
+      if (p.tempBuffs[key].timer > 0) {
+        const def = defs[key];
+        buffs.push({ icon: def ? def.icon : "✨", name: def ? def.name : key, timer: p.tempBuffs[key].timer, max: CONFIG.trader.buffDuration });
+      }
+    }
+    if (p.overloadTimer > 0) buffs.push({ icon: "⚡", name: "Overload", timer: p.overloadTimer, max: 10 });
+    if (this.enemySlow > 0) buffs.push({ icon: "⏳", name: "Time Warp", timer: this.enemySlow, max: 8 });
+    return buffs;
+  }
+
+  drawBuffBars(ctx) {
+    const buffs = this.getActiveBuffs();
+    if (!buffs.length) return;
+    const w = 168, h = 20;
+    const gap = 6;
+    const total = buffs.length * w + (buffs.length - 1) * gap;
+    let x = (this.screenW - total) / 2;
+    const y = this.screenH - 88;
+    for (const b of buffs) {
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = "rgba(57, 208, 255, 0.65)";
+      ctx.fillRect(x, y, w * clamp(b.timer / b.max, 0, 1), h);
+      ctx.strokeStyle = "rgba(255,255,255,0.3)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(b.icon + " " + b.name + " " + Math.ceil(b.timer) + "s", x + 4, y + h / 2);
+      x += w + gap;
+    }
   }
 
   drawDecorItem(ctx, d) {
