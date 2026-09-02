@@ -214,16 +214,19 @@ class Boss {
         if (this.phase() >= 3) {
           this.portalTimer -= dt;
           if (this.portalTimer <= 0) {
-            this.portalTimer = rand(4, 6);
+            this.portalTimer = rand(2.5, 4);
             if (game.cage) {
-              const a1 = Math.random() * Math.PI * 2;
-              const a2 = a1 + Math.PI * 0.5;
-              const d = game.cage.radius * 0.55;
-              this.portalPairs.push({
-                x1: game.cage.x + Math.cos(a1) * d, y1: game.cage.y + Math.sin(a1) * d,
-                x2: game.cage.x + Math.cos(a2) * d, y2: game.cage.y + Math.sin(a2) * d,
-                timer: 7,
-              });
+              const pairs = this.phase() >= 3 && this.hp < this.maxHp * 0.18 ? 2 : 1;
+              for (let k = 0; k < pairs; k++) {
+                const a1 = Math.random() * Math.PI * 2;
+                const a2 = a1 + Math.PI * 0.5;
+                const d = game.cage.radius * 0.55;
+                this.portalPairs.push({
+                  x1: game.cage.x + Math.cos(a1) * d, y1: game.cage.y + Math.sin(a1) * d,
+                  x2: game.cage.x + Math.cos(a2) * d, y2: game.cage.y + Math.sin(a2) * d,
+                  timer: 7,
+                });
+              }
             }
           }
         }
@@ -275,8 +278,9 @@ class Boss {
     const ph = this.phase();
     let count = 8 + this.tier * 3;
     let speed = 185 + this.tier * 15;
+    if (this.final) { count += 6; speed += 25; }
     if (ph === 2) count += 2;
-    else if (ph === 3) { count += 4; speed += 30; }
+    else if (ph === 3) { count += 6; speed += 35; }
     const dmg = this.getDamage() * 0.5;
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + this.spin * 0.5;

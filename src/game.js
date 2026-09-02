@@ -196,14 +196,18 @@ class Game {
   }
 
   createTrader() {
-    const a = Math.random() * Math.PI * 2;
-    const r = Math.min(this.arenaHalfW, this.arenaHalfH) * 0.35 * rand(0.5, 1);
-    const x = clamp(Math.cos(a) * r, -this.arenaHalfW + 40, this.arenaHalfW - 40);
-    const y = clamp(Math.sin(a) * r, -this.arenaHalfH + 40, this.arenaHalfH - 40);
+    const a = rand(Math.PI * 0.5, Math.PI);
+    const t = CONFIG.world.zoneHard * rand(0.2, 0.6);
+    const nx = Math.cos(a) * t;
+    const ny = Math.sin(a) * t;
+    const x = clamp(this.arenaHalfW + nx * 2 * this.arenaHalfW, -this.arenaHalfW + 40, this.arenaHalfW - 40);
+    const y = clamp(-this.arenaHalfH + ny * 2 * this.arenaHalfH, -this.arenaHalfH + 40, this.arenaHalfH - 40);
     this.trader = {
       id: "trader", type: "trader",
       x: x,
       y: y,
+      homeX: x,
+      homeY: y,
       radius: CONFIG.trader.radius,
       dirX: 1, dirY: 0,
       changeTimer: rand(2, 5),
@@ -257,12 +261,28 @@ class Game {
     t.changeTimer -= dt;
     if (t.changeTimer <= 0) {
       t.changeTimer = rand(2, 5);
-      const a = Math.random() * Math.PI * 2;
-      t.dirX = Math.cos(a);
-      t.dirY = Math.sin(a);
+      if (t.homeX != null && chance(0.7)) {
+        const a = angleTo(t.x, t.y, t.homeX, t.homeY);
+        t.dirX = Math.cos(a);
+        t.dirY = Math.sin(a);
+      } else {
+        const a = Math.random() * Math.PI * 2;
+        t.dirX = Math.cos(a);
+        t.dirY = Math.sin(a);
+      }
     }
     t.x += t.dirX * CONFIG.trader.speed * dt;
     t.y += t.dirY * CONFIG.trader.speed * dt;
+
+    if (t.homeX != null) {
+      const homeD = dist(t.x, t.y, t.homeX, t.homeY);
+      if (homeD > 620) {
+        const a = angleTo(t.x, t.y, t.homeX, t.homeY);
+        t.x += Math.cos(a) * 40 * dt;
+        t.y += Math.sin(a) * 40 * dt;
+      }
+    }
+
     t.x = clamp(t.x, -this.arenaHalfW + t.radius, this.arenaHalfW - t.radius);
     t.y = clamp(t.y, -this.arenaHalfH + t.radius, this.arenaHalfH - t.radius);
 
@@ -981,6 +1001,7 @@ class Game {
     const d = this.spawnRadius * 0.6;
     boss.x = clamp(this.player.x + Math.cos(a) * d, -this.arenaHalfW + boss.radius, this.arenaHalfW - boss.radius);
     boss.y = clamp(this.player.y + Math.sin(a) * d, -this.arenaHalfH + boss.radius, this.arenaHalfH - boss.radius);
+    boss.isEndless = true;
     this.boss = boss;
     this.bossWarning = 2.2;
     this.audio.play("bossSpawn");
@@ -990,27 +1011,35 @@ class Game {
   killBoss() {
     const boss = this.boss;
     const per = Math.round(boss.xp / 3);
-    for (let i = 0; i < CONFIG.bossArena.chestCrystals; i++) {
-      this.dropGem(boss.x + rand(-80, 80), boss.y + rand(-80, 80), per);
-    }
-    this.dropChest(boss.x, boss.y);
-    this.dropMagnet(boss.x + rand(-30, 30), boss.y + rand(-30, 30));
-    const heals = randInt(CONFIG.bossArena.bossHealsMin, CONFIG.bossArena.bossHealsMax);
-    for (let i = 0; i < heals; i++) {
-      this.dropHeal(boss.x + rand(-50, 50), boss.y + rand(-50, 50), CONFIG.heal.amount);
-    }
-    const isFinalBoss = boss.final === true;
-    const goldTotal = isFinalBoss ? CONFIG.gold.bossAmountFinal : CONFIG.gold.bossAmountMid;
-    if (isFinalBoss) {
-      Settings.gold += goldTotal;
-      this.stats.goldGained += goldTotal;
-      Settings.save();
-      this.lastRunGold = goldTotal;
-      Particles.text(this.player.x, this.player.y - 44, "+" + goldTotal + " gold", "#ffd166", 18);
+    if (boss.isEndless) {
+      for (let i = 0; i < 6; i++) {
+        this.dropGem(boss.x + rand(-80, 80), boss.y + rand(-80, 80), per);
+      }
+      this.dropGold(boss.x + rand(-20, 20), boss.y + rand(-20, 20), 25);
+      this.dropHeal(boss.x + rand(-20, 20), boss.y + rand(-20, 20), CONFIG.heal.amount);
     } else {
-      const coins = 4;
-      for (let i = 0; i < coins; i++) {
-        this.dropGold(boss.x + rand(-70, 70), boss.y + rand(-70, 70), Math.round(goldTotal / coins));
+      for (let i = 0; i < CONFIG.bossArena.chestCrystals; i++) {
+        this.dropGem(boss.x + rand(-80, 80), boss.y + rand(-80, 80), per);
+      }
+      this.dropChest(boss.x, boss.y);
+      this.dropMagnet(boss.x + rand(-30, 30), boss.y + rand(-30, 30));
+      const heals = randInt(CONFIG.bossArena.bossHealsMin, CONFIG.bossArena.bossHealsMax);
+      for (let i = 0; i < heals; i++) {
+        this.dropHeal(boss.x + rand(-50, 50), boss.y + rand(-50, 50), CONFIG.heal.amount);
+      }
+      const isFinalBoss = boss.final === true;
+      const goldTotal = isFinalBoss ? CONFIG.gold.bossAmountFinal : CONFIG.gold.bossAmountMid;
+      if (isFinalBoss) {
+        Settings.gold += goldTotal;
+        this.stats.goldGained += goldTotal;
+        Settings.save();
+        this.lastRunGold = goldTotal;
+        Particles.text(this.player.x, this.player.y - 44, "+" + goldTotal + " gold", "#ffd166", 18);
+      } else {
+        const coins = 4;
+        for (let i = 0; i < coins; i++) {
+          this.dropGold(boss.x + rand(-70, 70), boss.y + rand(-70, 70), Math.round(goldTotal / coins));
+        }
       }
     }
     Particles.burst(boss.x, boss.y, boss.color, 40, 320, 6);
