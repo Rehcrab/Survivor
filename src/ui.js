@@ -68,6 +68,7 @@ const UI = {
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
       "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader",
       "upgrade-cards", "stats-gameover", "stats-victory", "weapon-stats", "best-score", "menu-gold",
+      "btn-respawn",
       "loadout-grid", "account-grid", "weapon-upgrades-grid", "shop-gold",
       "shrine-gold", "shrine-blessings", "trader-gold", "trader-items",
       "pause-weapons", "pause-passives", "build-tooltip", "btn-reroll", "delete-count",
@@ -367,6 +368,7 @@ const UI = {
     document.getElementById("btn-menu").addEventListener("click", () => game.toMenu());
     document.getElementById("btn-retry").addEventListener("click", () => game.startRun());
     document.getElementById("btn-menu2").addEventListener("click", () => game.toMenu());
+    document.getElementById("btn-respawn").addEventListener("click", () => game.respawn());
     document.getElementById("btn-retry2").addEventListener("click", () => game.startRun());
     document.getElementById("btn-menu3").addEventListener("click", () => game.toMenu());
 
@@ -419,6 +421,19 @@ const UI = {
   updateGold() {
     if (this.el["menu-gold"]) this.el["menu-gold"].textContent = "GOLD: " + Settings.gold;
     if (this.el["shop-gold"]) this.el["shop-gold"].textContent = "GOLD: " + Settings.gold;
+  },
+
+  updateRespawnButton(game) {
+    const btn = this.el["btn-respawn"];
+    if (!btn) return;
+    if (game.respawnsUsed >= CONFIG.respawn.maxRespawns) {
+      btn.textContent = "No respawns left";
+      btn.disabled = true;
+    } else {
+      const cost = game.respawnCost();
+      btn.textContent = "RESPAWN (" + cost + " gold)";
+      btn.disabled = Settings.gold < cost;
+    }
   },
 
   showShop(game) {

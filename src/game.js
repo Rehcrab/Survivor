@@ -51,6 +51,7 @@ class Game {
     this.currentChoices = [];
     this.rerolls = 2;
     this.deletes = 1;
+    this.respawnsUsed = 0;
 
     this.bossIndex = 0;
     this.endless = false;
@@ -279,8 +280,12 @@ class Game {
     items.push({ type: "reroll", name: "Reroll Token", icon: "🔄", cost: CONFIG.trader.rerollCost, description: "+1 reroll for this run" });
     items.push({ type: "delete", name: "Delete Token", icon: "🗑️", cost: CONFIG.trader.deleteCost, description: "+1 delete for this run" });
     items.push({ type: "heal", name: "Heal", icon: "💚", cost: CONFIG.trader.healCost, description: "Fully restore HP" });
-    items.push({ type: "slot_weapon", name: "Extra Weapon Slot", icon: "🔫", cost: this.traderSlotCost(this.player.runWeaponSlots), description: "+1 weapon slot this run" });
-    items.push({ type: "slot_passive", name: "Extra Passive Slot", icon: "📦", cost: this.traderSlotCost(this.player.runPassiveSlots), description: "+1 passive slot this run" });
+    if (this.player.runWeaponSlots < CONFIG.trader.maxSlots) {
+      items.push({ type: "slot_weapon", name: "Extra Weapon Slot", icon: "🔫", cost: this.traderSlotCost(this.player.runWeaponSlots), description: "+1 weapon slot this run" });
+    }
+    if (this.player.runPassiveSlots < CONFIG.trader.maxSlots) {
+      items.push({ type: "slot_passive", name: "Extra Passive Slot", icon: "📦", cost: this.traderSlotCost(this.player.runPassiveSlots), description: "+1 passive slot this run" });
+    }
 
     const buffPool = CONFIG.trader.buffs.slice();
     for (let i = 0; i < 2 && buffPool.length; i++) {
@@ -308,10 +313,12 @@ class Game {
 
   traderBuy(item) {
     if (item.sold || Settings.gold < item.cost) return;
+    const p = this.player;
+    if (item.type === "slot_weapon" && p.runWeaponSlots >= CONFIG.trader.maxSlots) return;
+    if (item.type === "slot_passive" && p.runPassiveSlots >= CONFIG.trader.maxSlots) return;
     Settings.gold -= item.cost;
     this.stats.goldSpent += item.cost;
     Settings.save();
-    const p = this.player;
     switch (item.type) {
       case "reroll": this.rerolls++; break;
       case "delete": this.deletes++; break;
@@ -404,6 +411,7 @@ class Game {
     this.currentChoices = [];
     this.rerolls = 2;
     this.deletes = 1;
+    this.respawnsUsed = 0;
     this.bossIndex = 0;
     this.endless = false;
     this.endlessBossTimer = 180;
@@ -1044,7 +1052,37 @@ class Game {
     UI.show("gameover");
     UI.updateBestScore();
     UI.updateGold();
+    UI.updateRespawnButton(this);
     this.audio.play("defeat");
+  }
+
+  respawnCost() {
+    return CONFIG.respawn.costs[this.respawnsUsed] || 0;
+  }
+
+  respawn() {
+    if (this.state !== "GAME_OVER") return;
+    if (this.respawnsUsed >= CONFIG.respawn.maxRespawns) return;
+    const cost = this.respawnCost();
+    if (Settings.gold < cost) return;
+    Settings.gold -= cost;
+    Settings.save();
+    this.respawnsUsed++;
+    const p = this.player;
+    p.hp = p.maxHp * CONFIG.respawn.hpPercent;
+    p.invulnTimer = CONFIG.respawn.invulnTime;
+    for (const e of this.enemies) {
+      if (e.isSpawner) continue;
+      const d = dist(p.x, p.y, e.x, e.y);
+      if (d < 420) {
+        const a = angleTo(p.x, p.y, e.x, e.y);
+        e.kbx += Math.cos(a) * 820;
+        e.kby += Math.sin(a) * 820;
+      }
+    }
+    this.state = "PLAYING";
+    UI.hideAll();
+    this.audio.play("levelup");
   }
 
   buildWeaponBreakdown() {

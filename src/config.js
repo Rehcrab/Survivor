@@ -134,6 +134,7 @@ const CONFIG = {
     healCost: 120,
     slotBaseCost: 1000,
     slotCostMult: 2.5,
+    maxSlots: 1,
     buffCost: 220,
     buffDuration: 180,
     buffs: [
@@ -200,6 +201,13 @@ const CONFIG = {
   reroll: {
     startRerolls: 2,
     startDeletes: 1,
+  },
+
+  respawn: {
+    maxRespawns: 2,
+    costs: [500, 1500],
+    hpPercent: 0.5,
+    invulnTime: 2,
   },
 
   progression: [
