@@ -340,6 +340,7 @@ const UI = {
   showTooltip(html, anchor) {
     const tip = this.el["build-tooltip"];
     tip.innerHTML = html;
+    tip.classList.remove("hidden");
     tip.style.display = "block";
     const r = anchor.getBoundingClientRect();
     tip.style.left = "0px";
@@ -355,7 +356,9 @@ const UI = {
   },
 
   hideTooltip() {
-    this.el["build-tooltip"].style.display = "none";
+    const tip = this.el["build-tooltip"];
+    tip.classList.add("hidden");
+    tip.style.display = "none";
     this._tipAnchor = null;
   },
 
