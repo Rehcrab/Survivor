@@ -210,6 +210,11 @@ const CONFIG = {
     invulnTime: 2,
   },
 
+  challenge: {
+    horde: { enemyCapMult: 2.5, spawnRateMult: 3 },
+    boss: { bossHpMult: 2.5, bossDamageMult: 1.3 },
+  },
+
   progression: [
     { time: 1500, type: "warden", weight: 1 },
     { time: 1800, type: "tyrant", weight: 1 },

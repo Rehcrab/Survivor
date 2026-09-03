@@ -13,13 +13,13 @@ function difficultyMult(game) {
 function spawnInterval(game) {
   const d = CONFIG.difficulty;
   const p = clamp(game.time / 600, 0, 1);
-  return lerp(d.spawnIntervalMax, d.spawnIntervalMin, p);
+  return lerp(d.spawnIntervalMax, d.spawnIntervalMin, p) / ChallengeRun.spawnRateMult();
 }
 
 function maxEnemies(game) {
   const d = CONFIG.difficulty;
   const p = clamp(game.time / 600, 0, 1);
-  return Math.floor(lerp(d.maxEnemiesMin, d.maxEnemiesMax, p));
+  return Math.floor(lerp(d.maxEnemiesMin, d.maxEnemiesMax, p) * ChallengeRun.enemyCapMult());
 }
 
 function chooseEnemyType(game) {

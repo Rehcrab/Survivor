@@ -6,7 +6,7 @@ class Boss {
     this.radius = cfg.radius;
     this.x = 0;
     this.y = 0;
-    this.maxHp = cfg.hp * hpScale;
+    this.maxHp = cfg.hp * hpScale * ChallengeRun.bossHpMult();
     this.hp = this.maxHp;
     this.speed = cfg.speed;
     this.damage = cfg.damage;
@@ -61,7 +61,7 @@ class Boss {
   }
 
   getDamage() {
-    return this.damage * this.damageMult();
+    return this.damage * this.damageMult() * ChallengeRun.bossDamageMult();
   }
 
   attackInterval() {

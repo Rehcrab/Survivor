@@ -8,6 +8,9 @@ const Settings = {
   startingWeapon: "magic_bolt",
   accountUpgrades: {},
   weaponUpgrades: {},
+  stats: {},
+  achievements: {},
+  profile: { name: "Player", badges: { equipped: [] } },
 
   load() {
     try {
@@ -21,6 +24,13 @@ const Settings = {
       this.startingWeapon = s.startingWeapon || "magic_bolt";
       this.accountUpgrades = s.accountUpgrades || {};
       this.weaponUpgrades = s.weaponUpgrades || {};
+      this.stats = (s.stats && typeof s.stats === "object") ? s.stats : {};
+      this.achievements = (s.achievements && typeof s.achievements === "object") ? s.achievements : {};
+      const p = (s.profile && typeof s.profile === "object") ? s.profile : {};
+      this.profile = {
+        name: (typeof p.name === "string" && p.name.trim()) ? p.name.trim().slice(0, 20) : "Player",
+        badges: { equipped: Array.isArray(p.badges && p.badges.equipped) ? p.badges.equipped : [] },
+      };
     } catch (e) { /* ignore */ }
   },
 
@@ -36,6 +46,9 @@ const Settings = {
         startingWeapon: this.startingWeapon,
         accountUpgrades: this.accountUpgrades,
         weaponUpgrades: this.weaponUpgrades,
+        stats: this.stats,
+        achievements: this.achievements,
+        profile: this.profile,
       }));
     } catch (e) { /* ignore */ }
   },
@@ -55,6 +68,7 @@ window.game = game;
 
 UI.cache();
 Settings.load();
+Achievements.init();
 AudioMan.setSound(Settings.sound);
 AudioMan.setMusic(Settings.music);
 UI.bind(game);

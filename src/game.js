@@ -70,6 +70,8 @@ class Game {
     this.interactCooldown = 0;
     this.interactable = null;
     this.notice = null;
+    this.toasts = [];
+    this.runCommitted = false;
     this.resetStats();
   }
 
@@ -81,6 +83,27 @@ class Game {
       xpCollected: 0,
       goldGained: 0,
       goldSpent: 0,
+      elitesKilled: 0,
+      eliteTanksKilled: 0,
+      modifiersDefeated: 0,
+      highestHit: 0,
+      damageTaken: 0,
+      lowHpStart: null,
+      bossKilledLowHp: false,
+      maxWeaponsOwned: 0,
+      evolutionsThisRun: 0,
+      masteriesThisRun: 0,
+      rerollsThisRun: 0,
+      deletesThisRun: 0,
+      spawnersThisRun: 0,
+      traderPurchasesThisRun: 0,
+      shrineUsesThisRun: 0,
+      overlordNoRespawn: false,
+      overlordNoEvo: false,
+      overlordLowHpNoRespawn: false,
+      weaponsUsed: {},
+      weaponsEvolvedThisRun: {},
+      bossesDefeated: {},
     };
   }
 
@@ -167,6 +190,7 @@ class Game {
 
   killSpawner(s) {
     s.destroyed = true;
+    this.stats.spawnersThisRun++;
     this.player.addXp(CONFIG.spawners.xpReward);
     this.stats.xpCollected += CONFIG.spawners.xpReward;
     Settings.gold += CONFIG.spawners.goldReward;
@@ -300,7 +324,7 @@ class Game {
     items.push({ type: "reroll", name: "Reroll Token", icon: "🔄", cost: CONFIG.trader.rerollCost, description: "+1 reroll for this run" });
     items.push({ type: "delete", name: "Delete Token", icon: "🗑️", cost: CONFIG.trader.deleteCost, description: "+1 delete for this run" });
     items.push({ type: "heal", name: "Heal", icon: "💚", cost: CONFIG.trader.healCost, description: "Fully restore HP" });
-    if (this.player.runWeaponSlots < CONFIG.trader.maxSlots) {
+    if (this.player.runWeaponSlots < CONFIG.trader.maxSlots && ChallengeRun.weaponSlots() == null) {
       items.push({ type: "slot_weapon", name: "Extra Weapon Slot", icon: "🔫", cost: this.traderSlotCost(this.player.runWeaponSlots), description: "+1 weapon slot this run" });
     }
     if (this.player.runPassiveSlots < CONFIG.trader.maxSlots) {
@@ -334,10 +358,11 @@ class Game {
   traderBuy(item) {
     if (item.sold || Settings.gold < item.cost) return;
     const p = this.player;
-    if (item.type === "slot_weapon" && p.runWeaponSlots >= CONFIG.trader.maxSlots) return;
+    if (item.type === "slot_weapon" && (p.runWeaponSlots >= CONFIG.trader.maxSlots || ChallengeRun.weaponSlots() != null)) return;
     if (item.type === "slot_passive" && p.runPassiveSlots >= CONFIG.trader.maxSlots) return;
     Settings.gold -= item.cost;
     this.stats.goldSpent += item.cost;
+    this.stats.traderPurchasesThisRun++;
     Settings.save();
     switch (item.type) {
       case "reroll": this.rerolls++; break;
@@ -353,6 +378,7 @@ class Game {
       case "mastery": {
         if (!this.masteries[item.weaponId]) this.masteries[item.weaponId] = [];
         this.masteries[item.weaponId].push(item.masteryId);
+        this.stats.masteriesThisRun++;
         break;
       }
     }
@@ -365,6 +391,7 @@ class Game {
     if (Settings.gold < cost) return;
     Settings.gold -= cost;
     this.stats.goldSpent += cost;
+    this.stats.shrineUsesThisRun++;
     Settings.save();
     this.shrine.uses++;
     const p = this.player;
@@ -407,6 +434,34 @@ class Game {
   }
 
   startRun() {
+    ChallengeRun.clear();
+    this._beginRun();
+  }
+
+  startChallengeRun(id) {
+    ChallengeRun.begin(id);
+    this._beginRun();
+    this._applyChallengeRules();
+  }
+
+  commitRunIfNeeded() {
+    if (this.player && !this.runCommitted) {
+      Achievements.commitRun(this);
+      this.runCommitted = true;
+    }
+  }
+
+  _applyChallengeRules() {
+    const sl = ChallengeRun.speedLock();
+    if (sl != null) {
+      this.speedMult = sl;
+      UI.updateSpeedLabel(this);
+    }
+  }
+
+  _beginRun() {
+    this.commitRunIfNeeded();
+    this.runCommitted = false;
     this.player = new Player();
     this.player.weapons.push(createWeapon(Settings.startingWeapon || "magic_bolt"));
     this.enemies.length = 0;
@@ -445,6 +500,7 @@ class Game {
     this.masteries = {};
     this.interactCooldown = 0;
     this.notice = null;
+    this.toasts = [];
     this.shrine = null;
     this.trader = null;
     this.createSpawners();
@@ -459,6 +515,8 @@ class Game {
   }
 
   toMenu() {
+    this.commitRunIfNeeded();
+    ChallengeRun.clear();
     this.state = "MENU";
     this.boss = null;
     UI.show("menu");
@@ -505,6 +563,7 @@ class Game {
     if (this.state !== "LEVEL_UP") return;
     if (this.rerolls <= 0) return;
     this.rerolls--;
+    this.stats.rerollsThisRun++;
     this.currentChoices = generateChoices(this.player);
     UI.showUpgrades(this, this.currentChoices);
     this.audio.play("click");
@@ -523,6 +582,7 @@ class Game {
     }
     if (!removed) return;
     this.deletes--;
+    this.stats.deletesThisRun++;
     p.applyMaxHpChange();
     UI.refreshBuild(this);
     UI.populatePauseBuild(this);
@@ -531,6 +591,20 @@ class Game {
 
   addShake(amount) {
     if (Settings.shake) this.camera.addShake(amount);
+  }
+
+  queueAchievementToasts(list) {
+    for (const a of list) {
+      this.toasts.push({ icon: a.icon, name: a.name, timer: 4 });
+    }
+    if (list.length) this.audio.play("levelup");
+  }
+
+  updateAchievementToasts(dt) {
+    for (let i = this.toasts.length - 1; i >= 0; i--) {
+      this.toasts[i].timer -= dt;
+      if (this.toasts[i].timer <= 0) this.toasts.splice(i, 1);
+    }
   }
 
   fireEnemyProjectile(x, y, dx, dy, speed, dmg) {
@@ -556,6 +630,7 @@ class Game {
     const dmg = baseDamage * mult * (crit ? this.player.critDamage : 1);
     e.hitFlash = 0.08;
     this.stats.damageDealt += dmg;
+    if (dmg > this.stats.highestHit) this.stats.highestHit = dmg;
     this.trackDamage(sourceId, dmg);
 
     if (e.shield > 0) {
@@ -590,6 +665,7 @@ class Game {
     const dmg = baseDamage * this.player.damageMultiplier() * (crit ? this.player.critDamage : 1);
     b.hitFlash = 0.08;
     this.stats.damageDealt += dmg;
+    if (dmg > this.stats.highestHit) this.stats.highestHit = dmg;
     this.trackDamage(sourceId, dmg);
 
     if (b.shieldActive && b.shield > 0) {
@@ -624,6 +700,11 @@ class Game {
       return;
     }
     this.stats.enemiesKilled++;
+    if (e.elite) {
+      this.stats.elitesKilled++;
+      if (e.type === "tank") this.stats.eliteTanksKilled++;
+      if (e.mods && e.mods.length) this.stats.modifiersDefeated++;
+    }
     this.dropGem(e.x, e.y, e.xpValue);
     if (chance(CONFIG.gold.enemyChance)) this.dropGold(e.x, e.y, CONFIG.gold.enemyAmount);
     if (sourceId) {
@@ -970,6 +1051,7 @@ class Game {
     if (p.invulnTimer > 0) return false;
     const applied = p.takeDamage(dmg);
     if (!applied) return false;
+    this.stats.damageTaken += dmg;
     Particles.burst(p.x, p.y, "#ff5f6d", 12, 180, 4);
     this.addShake(7);
     this.audio.play("playerHit");
@@ -987,6 +1069,7 @@ class Game {
     const d = cageRadius * 0.5;
     boss.x = clamp(this.player.x + Math.cos(a) * d, -this.arenaHalfW + boss.radius, this.arenaHalfW - boss.radius);
     boss.y = clamp(this.player.y + Math.sin(a) * d, -this.arenaHalfH + boss.radius, this.arenaHalfH - boss.radius);
+    boss.type = type;
     this.boss = boss;
     this.enemies = this.enemies.filter(e => e.isSpawner);
     this.cage = { x: this.player.x, y: this.player.y, radius: cageRadius };
@@ -1002,6 +1085,7 @@ class Game {
     boss.x = clamp(this.player.x + Math.cos(a) * d, -this.arenaHalfW + boss.radius, this.arenaHalfW - boss.radius);
     boss.y = clamp(this.player.y + Math.sin(a) * d, -this.arenaHalfH + boss.radius, this.arenaHalfH - boss.radius);
     boss.isEndless = true;
+    boss.type = type;
     this.boss = boss;
     this.bossWarning = 2.2;
     this.audio.play("bossSpawn");
@@ -1047,6 +1131,18 @@ class Game {
     this.addShake(12);
     this.audio.play("bossDie");
     this.stats.bossesKilled++;
+    if (boss.type) this.stats.bossesDefeated[boss.type] = true;
+    if (this.player.hp <= this.player.maxHp * 0.1) this.stats.bossKilledLowHp = true;
+    if (boss.type === "overlord") {
+      if (this.respawnsUsed === 0) this.stats.overlordNoRespawn = true;
+      if (!this.player.weapons.some(w => w.evolved)) this.stats.overlordNoEvo = true;
+      if (this.respawnsUsed === 0 && this.player.hp <= this.player.maxHp * 0.1) this.stats.overlordLowHpNoRespawn = true;
+    }
+    if (boss.type === "overlord" && !boss.isEndless && ChallengeRun.isActive() && !ChallengeRun.failed && !ChallengeRun.completed) {
+      ChallengeRun.complete();
+      this.notice = { text: "🏆 Challenge Complete: " + ChallengeRun.def.name + "!", timer: 4 };
+      this.audio.play("victory");
+    }
     this.boss = null;
     this.cage = null;
   }
@@ -1063,6 +1159,9 @@ class Game {
 
   endRun() {
     this.state = "GAME_OVER";
+    if (ChallengeRun.isActive() && !ChallengeRun.completed) {
+      ChallengeRun.fail("Defeated before defeating the Overlord");
+    }
     if (Settings.bestTime < this.time) {
       Settings.bestTime = this.time;
       Settings.save();
@@ -1082,6 +1181,8 @@ class Game {
     UI.updateBestScore();
     UI.updateGold();
     UI.updateRespawnButton(this);
+    UI.updateGameoverChallenge(this);
+    UI.updateGameoverButtons(this);
     this.audio.play("defeat");
   }
 
@@ -1091,12 +1192,14 @@ class Game {
 
   respawn() {
     if (this.state !== "GAME_OVER") return;
+    if (ChallengeRun.noRespawn()) return;
     if (this.respawnsUsed >= CONFIG.respawn.maxRespawns) return;
     const cost = this.respawnCost();
     if (Settings.gold < cost) return;
     Settings.gold -= cost;
     Settings.save();
     this.respawnsUsed++;
+    if (ChallengeRun.isActive()) ChallengeRun.clearFail();
     const p = this.player;
     p.hp = p.maxHp * CONFIG.respawn.hpPercent;
     p.invulnTimer = CONFIG.respawn.invulnTime;
@@ -1137,6 +1240,10 @@ class Game {
   updatePlaying(dt) {
     this.time += dt;
     const p = this.player;
+
+    if (p.weapons.length > this.stats.maxWeaponsOwned) this.stats.maxWeaponsOwned = p.weapons.length;
+    for (const w of p.weapons) this.stats.weaponsUsed[w.id] = true;
+    if (this.stats.lowHpStart == null && p.hp <= p.maxHp * 0.1) this.stats.lowHpStart = this.time;
 
     this.camera.follow(p.x, p.y, dt);
 
@@ -1221,6 +1328,9 @@ class Game {
     Particles.update(dt);
     this.camera.update(dt);
     UI.updateHUD(this);
+    const unlocked = Achievements.check(this);
+    if (unlocked.length) this.queueAchievementToasts(unlocked);
+    this.updateAchievementToasts(dt);
   }
 
   handlePlayerProjectileCollisions() {
@@ -1380,6 +1490,10 @@ class Game {
       this.pendingLevelUps++;
     }
     if (this.pendingLevelUps > 0 && this.state === "PLAYING") {
+      if (ChallengeRun.autoLevelUp()) {
+        this.autoLevelUp();
+        return;
+      }
       this.currentChoices = generateChoices(p);
       if (this.currentChoices.length === 0) {
         this.pendingLevelUps = 0;
@@ -1388,6 +1502,16 @@ class Game {
       }
       this.state = "LEVEL_UP";
       UI.showUpgrades(this, this.currentChoices);
+    }
+  }
+
+  autoLevelUp() {
+    const p = this.player;
+    while (this.pendingLevelUps > 0) {
+      const choices = generateChoices(p);
+      const choice = pick(choices);
+      applyUpgrade(this, choice);
+      this.pendingLevelUps--;
     }
   }
 
@@ -1403,6 +1527,7 @@ class Game {
   }
 
   cycleSpeed() {
+    if (ChallengeRun.speedLock() != null) return;
     this.speedMult = this.speedMult >= 4 ? 1 : this.speedMult * 2;
     UI.updateSpeedLabel(this);
     this.audio.play("click");
@@ -1485,6 +1610,8 @@ class Game {
       ctx.fillText("⚠ WARNING ⚠", this.screenW / 2, this.screenH * 0.3);
       ctx.globalAlpha = 1;
     }
+
+    this.drawAchievementToasts(ctx);
 
     if (this.state === "CHEST") {
       this.drawChestWheel(ctx);
@@ -1626,6 +1753,29 @@ class Game {
       ctx.textBaseline = "middle";
       ctx.fillText(b.icon + " " + b.name + " " + Math.ceil(b.timer) + "s", x + 4, y + h / 2);
       x += w + gap;
+    }
+  }
+
+  drawAchievementToasts(ctx) {
+    if (!this.toasts.length) return;
+    const w = 300, h = 42;
+    let y = 96;
+    for (const t of this.toasts) {
+      const alpha = clamp(t.timer > 0.5 ? 1 : t.timer * 2, 0, 1);
+      const x = this.screenW / 2 - w / 2;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "rgba(10, 14, 26, 0.88)";
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = "#ffd166";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = "#ffd166";
+      ctx.font = "bold 15px system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🏆  " + t.icon + "  " + t.name, x + 14, y + h / 2);
+      ctx.globalAlpha = 1;
+      y += h + 8;
     }
   }
 

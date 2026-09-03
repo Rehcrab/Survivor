@@ -66,19 +66,25 @@ const UI = {
       "canvas", "hud", "hp-fill", "hp-text", "xp-fill", "level-badge", "timer",
       "pause-btn", "speed-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
-      "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader",
+      "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader", "achievements", "profile", "challenge-confirm",
       "upgrade-cards", "stats-gameover", "stats-victory", "weapon-stats", "best-score", "menu-gold",
       "btn-respawn",
+      "btn-retry",
+      "btn-retry-challenge",
       "loadout-grid", "account-grid", "weapon-upgrades-grid", "shop-gold",
       "shrine-gold", "shrine-blessings", "trader-gold", "trader-items",
       "pause-weapons", "pause-passives", "build-tooltip", "btn-reroll", "delete-count",
+      "achievements-list", "achievements-count",
+      "profile-name", "profile-badges", "profile-stats", "profile-ach", "profile-fav", "profile-badge-list",
+      "pause-challenge", "gameover-challenge",
+      "challenge-confirm-title", "challenge-confirm-rules", "challenge-confirm-goal",
     ];
     ids.forEach(id => { this.el[id] = document.getElementById(id); });
   },
 
   hideAll() {
     this.hideTooltip();
-    ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader"].forEach(id => {
+    ["menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader", "achievements", "profile", "challenge-confirm"].forEach(id => {
       this.el[id].classList.add("hidden");
     });
   },
@@ -328,6 +334,7 @@ const UI = {
       const def = skillDef(s.id);
       pc.appendChild(this.makeBuildSlot(def.icon, s.level, this.skillTip(s.id, s.level), canDelete ? () => game.deleteItem("skill", s.id) : null));
     }
+    this.updatePauseChallenge(game);
   },
 
   showTooltip(html, anchor) {
@@ -360,13 +367,24 @@ const UI = {
     document.getElementById("btn-howto-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); });
     document.getElementById("btn-shop").addEventListener("click", () => { AudioMan.play("click"); this.showShop(game); });
     document.getElementById("btn-shop-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); this.updateGold(); });
+    document.getElementById("btn-achievements").addEventListener("click", () => { AudioMan.play("click"); this.showAchievements(game, "menu"); });
+    document.getElementById("btn-achievements-back").addEventListener("click", () => { AudioMan.play("click"); this.show(this._achReturn || "menu"); });
+    document.getElementById("btn-profile").addEventListener("click", () => { AudioMan.play("click"); this.showProfile(game); });
+    document.getElementById("btn-profile-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); });
+    document.getElementById("btn-challenge-start").addEventListener("click", () => { this.startChallenge(); });
+    document.getElementById("btn-challenge-back").addEventListener("click", () => { AudioMan.play("click"); this.showAchievements(this._challengeGame, this._challengeReturn || "menu"); });
     document.getElementById("btn-shrine-close").addEventListener("click", () => game.closeShop());
     document.getElementById("btn-trader-close").addEventListener("click", () => game.closeShop());
 
     document.getElementById("btn-resume").addEventListener("click", () => game.resume());
     document.getElementById("btn-restart").addEventListener("click", () => game.startRun());
     document.getElementById("btn-menu").addEventListener("click", () => game.toMenu());
+    document.getElementById("btn-achievements-pause").addEventListener("click", () => { AudioMan.play("click"); this.showAchievements(game, "pause"); });
     document.getElementById("btn-retry").addEventListener("click", () => game.startRun());
+    document.getElementById("btn-retry-challenge").addEventListener("click", () => {
+      const id = ChallengeRun.id;
+      if (id) { AudioMan.play("click"); game.startChallengeRun(id); }
+    });
     document.getElementById("btn-menu2").addEventListener("click", () => game.toMenu());
     document.getElementById("btn-respawn").addEventListener("click", () => game.respawn());
     document.getElementById("btn-retry2").addEventListener("click", () => game.startRun());
@@ -426,6 +444,11 @@ const UI = {
   updateRespawnButton(game) {
     const btn = this.el["btn-respawn"];
     if (!btn) return;
+    if (ChallengeRun.noRespawn()) {
+      btn.textContent = "Respawns Disabled";
+      btn.disabled = true;
+      return;
+    }
     if (game.respawnsUsed >= CONFIG.respawn.maxRespawns) {
       btn.textContent = "No respawns left";
       btn.disabled = true;
@@ -433,6 +456,61 @@ const UI = {
       const cost = game.respawnCost();
       btn.textContent = "RESPAWN (" + cost + " gold)";
       btn.disabled = Settings.gold < cost;
+    }
+  },
+
+  updatePauseChallenge(game) {
+    const el = this.el["pause-challenge"];
+    if (!el) return;
+    const st = ChallengeRun.status();
+    if (!st) {
+      el.classList.add("hidden");
+      el.innerHTML = "";
+      return;
+    }
+    el.classList.remove("hidden");
+    let statusClass = "active";
+    let statusText = "ACTIVE";
+    if (st.status === "COMPLETED") { statusClass = "completed"; statusText = "COMPLETED"; }
+    else if (st.status === "FAILED") { statusClass = "failed"; statusText = "FAILED"; }
+    el.innerHTML =
+      '<div class="pause-challenge-title">' + st.icon + " " + st.name + '</div>' +
+      '<div class="pause-challenge-goal">' + st.goal + '</div>' +
+      '<div class="pause-challenge-status ' + statusClass + '">' + statusText + (st.reason ? ": " + st.reason : "") + '</div>';
+  },
+
+  updateGameoverChallenge(game) {
+    const el = this.el["gameover-challenge"];
+    if (!el) return;
+    const st = ChallengeRun.status();
+    if (!st) {
+      el.classList.add("hidden");
+      el.innerHTML = "";
+      return;
+    }
+    el.classList.remove("hidden");
+    let cls = "failed";
+    let txt = "Challenge Failed";
+    if (st.status === "COMPLETED") { cls = "completed"; txt = "Challenge Complete"; }
+    else if (st.status === "ACTIVE") { cls = "active"; txt = "Challenge In Progress"; }
+    el.className = "gameover-challenge " + cls;
+    el.innerHTML = '<span class="gc-name">' + st.icon + " " + st.name + ": " + txt + '</span>' + (st.reason ? '<span class="gc-reason">' + st.reason + '</span>' : "");
+  },
+
+  updateGameoverButtons(game) {
+    const challengeBtn = this.el["btn-retry-challenge"];
+    const retryBtn = this.el["btn-retry"];
+    if (!challengeBtn || !retryBtn) return;
+    if (ChallengeRun.isActive()) {
+      challengeBtn.classList.remove("hidden");
+      challengeBtn.classList.add("primary");
+      retryBtn.classList.remove("primary");
+      retryBtn.textContent = "PLAY NORMALLY AGAIN";
+    } else {
+      challengeBtn.classList.add("hidden");
+      challengeBtn.classList.remove("primary");
+      retryBtn.classList.add("primary");
+      retryBtn.textContent = "PLAY AGAIN";
     }
   },
 
@@ -596,5 +674,289 @@ const UI = {
       container.appendChild(card);
     }
     this.show("trader");
+  },
+
+  showAchievements(game, returnTo) {
+    this._achReturn = returnTo || "menu";
+    const canAttempt = this._achReturn !== "pause";
+    const list = this.el["achievements-list"];
+    list.innerHTML = "";
+    const C = Achievements.buildSummary(game);
+    const total = ACHIEVEMENTS.length;
+    if (this.el["achievements-count"]) {
+      this.el["achievements-count"].textContent = Achievements.unlockedCount() + " / " + total;
+    }
+
+    for (const cat of ACHIEVEMENT_CATEGORIES) {
+      const heading = document.createElement("div");
+      heading.className = "ach-category" + (cat === "Insane" ? " insane" : "");
+      heading.textContent = cat === "Insane" ? "🔴 INSANE CHALLENGES" : cat;
+      list.appendChild(heading);
+
+      for (const a of ACHIEVEMENTS) {
+        if (a.category !== cat) continue;
+        const done = !!Achievements.unlocked[a.id];
+        const row = document.createElement("div");
+        row.className = "ach-item" + (done ? " unlocked" : " locked") + (cat === "Insane" ? " insane" : "");
+
+        let progress = "";
+        if (!done && a.progress) {
+          try { const p = a.progress(C, game); if (p) progress = p; } catch (e) { /* ignore */ }
+        }
+
+        const tier = a.tier ? '<div class="ach-tier">🔴 ' + a.tier.toUpperCase() + '</div>' : "";
+
+        row.innerHTML =
+          '<div class="ach-icon">' + a.icon + '</div>' +
+          '<div class="ach-body"><div class="ach-name">' + a.name + '</div>' +
+          '<div class="ach-desc">' + a.description + '</div>' +
+          tier +
+          (progress ? '<div class="ach-progress">' + progress + '</div>' : "") +
+          '</div>' +
+          '<div class="ach-status ' + (done ? "done" : "") + '">' + (done ? "UNLOCKED" : "LOCKED") + '</div>';
+
+        if (canAttempt && a.challenge) {
+          const btn = document.createElement("button");
+          btn.className = "ach-attempt-btn";
+          btn.textContent = "Attempt";
+          btn.addEventListener("click", () => { AudioMan.play("click"); this.showChallengeConfirm(a.id, game, returnTo); });
+          row.appendChild(btn);
+        }
+
+        list.appendChild(row);
+      }
+    }
+
+    this.show("achievements");
+  },
+
+  showChallengeConfirm(id, game, returnTo) {
+    const a = achievementById(id);
+    if (!a || !a.challenge) return;
+    this._challengeId = id;
+    this._challengeGame = game;
+    this._challengeReturn = returnTo || "menu";
+    this.el["challenge-confirm-title"].textContent = a.icon + " " + a.name.toUpperCase();
+    const rules = this.el["challenge-confirm-rules"];
+    rules.innerHTML = "";
+    for (const r of a.challenge.confirm) {
+      const row = document.createElement("div");
+      row.className = "challenge-rule";
+      row.innerHTML =
+        '<span class="challenge-rule-icon">' + r[0] + '</span>' +
+        '<span class="challenge-rule-label">' + r[1] + '</span>' +
+        '<span class="challenge-rule-value">' + r[2] + '</span>';
+      rules.appendChild(row);
+    }
+    this.el["challenge-confirm-goal"].textContent = "🎯 Goal: " + a.challenge.goal;
+    this.show("challenge-confirm");
+  },
+
+  startChallenge() {
+    const id = this._challengeId;
+    const game = this._challengeGame;
+    if (!id || !game) return;
+    AudioMan.play("click");
+    game.startChallengeRun(id);
+  },
+
+  showProfile(game) {
+    this._profileGame = game;
+    const C = Achievements.buildSummary(null);
+    const total = ACHIEVEMENTS.length;
+    const unlocked = Achievements.unlockedCount();
+    const fmt = (n) => Math.round(n).toLocaleString();
+
+    this.renderProfileName();
+    this.renderProfileBadges();
+
+    const stats = this.el["profile-stats"];
+    stats.innerHTML = "";
+    const rows = [
+      ["Total Runs", fmt(C.totalRuns)],
+      ["Longest Survival", formatTime(C.longestTime)],
+      ["Highest Level", C.highestLevel],
+      ["Enemies Defeated", fmt(C.totalKills)],
+      ["Elites Defeated", fmt(C.elitesKilled)],
+      ["Bosses Defeated", fmt(C.totalBosses)],
+      ["Gold Earned", fmt(C.totalGoldEarned)],
+      ["Gold Spent", fmt(C.totalGoldSpent)],
+      ["Weapon Evolutions", fmt(C.totalEvolutions)],
+      ["Masteries Purchased", fmt(C.masteriesPurchased)],
+      ["Highest Damage (Run)", fmt(C.highestRunDamage)],
+      ["Highest Damage (Weapon)", fmt(C.highestWeaponDamage)],
+      ["Spawners Destroyed", fmt(C.spawnersDestroyed)],
+      ["Trader Purchases", fmt(C.traderPurchases)],
+      ["Shrine Blessings", fmt(C.shrinesUsed)],
+    ];
+    for (const r of rows) {
+      const row = document.createElement("div");
+      row.className = "stat";
+      row.innerHTML = '<span class="label">' + r[0] + '</span><span class="value">' + r[1] + "</span>";
+      stats.appendChild(row);
+    }
+
+    const ach = this.el["profile-ach"];
+    const filled = Math.round(unlocked / total * 10);
+    ach.innerHTML =
+      '<div class="profile-ach-title">Achievements</div>' +
+      '<div class="profile-ach-bar">' + "█".repeat(filled) + "░".repeat(10 - filled) + '</div>' +
+      '<div class="profile-ach-count">' + unlocked + " / " + total + "</div>";
+
+    const fav = this.el["profile-fav"];
+    const fw = Achievements.favoriteWeapon(null);
+    fav.innerHTML =
+      '<div class="profile-fav-title">Favorite Weapon</div>' +
+      (fw ? '<div class="profile-fav-name">' + fw.icon + " " + fw.name + "</div>" : '<div class="profile-fav-name muted">—</div>');
+
+    this.renderProfileBadgeList();
+    this.show("profile");
+  },
+
+  renderProfileName() {
+    const wrap = this.el["profile-name"];
+    wrap.innerHTML = "";
+    const name = document.createElement("span");
+    name.className = "profile-name-text";
+    name.textContent = Settings.profile.name;
+    const edit = document.createElement("button");
+    edit.className = "profile-edit-btn";
+    edit.textContent = "✏️";
+    edit.addEventListener("click", () => this.startProfileRename());
+    wrap.appendChild(name);
+    wrap.appendChild(edit);
+  },
+
+  startProfileRename() {
+    const wrap = this.el["profile-name"];
+    wrap.innerHTML = "";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 20;
+    input.className = "profile-name-input";
+    input.value = Settings.profile.name;
+    wrap.appendChild(input);
+    input.focus();
+    input.select();
+    let cancel = false;
+    const commit = () => {
+      if (!cancel) {
+        const v = input.value.trim();
+        Settings.profile.name = v ? v.slice(0, 20) : "Player";
+        Settings.save();
+      }
+      this.showProfile(this._profileGame);
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") input.blur();
+      else if (e.key === "Escape") { cancel = true; input.blur(); }
+    });
+    input.addEventListener("blur", commit);
+  },
+
+  renderProfileBadges() {
+    const wrap = this.el["profile-badges"];
+    wrap.innerHTML = "";
+    const equipped = Settings.profile.badges.equipped;
+    for (let i = 0; i < BADGE_MAX; i++) {
+      const slot = document.createElement("div");
+      slot.className = "profile-badge-slot";
+      const id = equipped[i];
+      const def = id ? achievementById(id) : null;
+      if (def) {
+        slot.classList.add("filled");
+        const icon = document.createElement("span");
+        icon.className = "profile-badge-icon";
+        icon.textContent = def.icon;
+        icon.title = def.name;
+        const left = document.createElement("button");
+        left.className = "badge-move";
+        left.textContent = "◀";
+        left.disabled = i === 0;
+        left.addEventListener("click", () => this.moveBadge(i, -1));
+        const right = document.createElement("button");
+        right.className = "badge-move";
+        right.textContent = "▶";
+        right.disabled = i === equipped.length - 1;
+        right.addEventListener("click", () => this.moveBadge(i, 1));
+        const x = document.createElement("button");
+        x.className = "badge-unequip";
+        x.textContent = "×";
+        x.addEventListener("click", () => this.unequipBadge(id));
+        slot.appendChild(icon);
+        slot.appendChild(left);
+        slot.appendChild(right);
+        slot.appendChild(x);
+      } else {
+        slot.classList.add("empty");
+        slot.textContent = "—";
+      }
+      wrap.appendChild(slot);
+    }
+  },
+
+  renderProfileBadgeList() {
+    const wrap = this.el["profile-badge-list"];
+    wrap.innerHTML = "";
+    const equipped = Settings.profile.badges.equipped;
+    for (const id of BADGE_IDS) {
+      const def = achievementById(id);
+      if (!def) continue;
+      const unlocked = !!Achievements.unlocked[id];
+      const isEquipped = equipped.includes(id);
+      const row = document.createElement("div");
+      row.className = "badge-row" + (unlocked ? "" : " locked");
+      row.innerHTML =
+        '<div class="badge-icon">' + def.icon + '</div>' +
+        '<div class="badge-name">' + def.name + '</div>';
+      const btn = document.createElement("button");
+      btn.className = "badge-btn";
+      if (!unlocked) {
+        btn.textContent = "LOCKED";
+        btn.disabled = true;
+      } else if (isEquipped) {
+        btn.textContent = "UNEQUIP";
+        btn.addEventListener("click", () => this.unequipBadge(id));
+      } else {
+        btn.textContent = "EQUIP";
+        btn.disabled = equipped.length >= BADGE_MAX;
+        btn.addEventListener("click", () => this.equipBadge(id));
+      }
+      row.appendChild(btn);
+      wrap.appendChild(row);
+    }
+  },
+
+  equipBadge(id) {
+    const equipped = Settings.profile.badges.equipped;
+    if (!Achievements.unlocked[id] || equipped.includes(id) || equipped.length >= BADGE_MAX) return;
+    equipped.push(id);
+    Settings.save();
+    AudioMan.play("click");
+    this.renderProfileBadges();
+    this.renderProfileBadgeList();
+  },
+
+  unequipBadge(id) {
+    const equipped = Settings.profile.badges.equipped;
+    const idx = equipped.indexOf(id);
+    if (idx === -1) return;
+    equipped.splice(idx, 1);
+    Settings.save();
+    AudioMan.play("click");
+    this.renderProfileBadges();
+    this.renderProfileBadgeList();
+  },
+
+  moveBadge(index, dir) {
+    const equipped = Settings.profile.badges.equipped;
+    const j = index + dir;
+    if (j < 0 || j >= equipped.length) return;
+    const tmp = equipped[index];
+    equipped[index] = equipped[j];
+    equipped[j] = tmp;
+    Settings.save();
+    AudioMan.play("click");
+    this.renderProfileBadges();
   },
 };

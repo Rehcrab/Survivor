@@ -55,6 +55,8 @@
           <button class="btn" id="btn-shop">SHOP</button>
           <button class="btn" id="btn-howto">HOW TO PLAY</button>
           <button class="btn" id="btn-settings">SETTINGS</button>
+          <button class="btn" id="btn-achievements">ACHIEVEMENTS</button>
+          <button class="btn" id="btn-profile">PROFILE</button>
         </div>
         <div id="best-score" class="best-score"></div>
         <div id="menu-gold" class="best-score gold"></div>
@@ -89,8 +91,10 @@
           <label class="setting"><span>Music</span><input type="checkbox" id="pause-set-music" checked /></label>
           <label class="setting"><span>Screen Shake</span><input type="checkbox" id="pause-set-shake" checked /></label>
         </div>
+        <div id="pause-challenge" class="pause-challenge hidden"></div>
         <div class="menu-buttons">
           <button class="btn primary" id="btn-resume">RESUME</button>
+          <button class="btn" id="btn-achievements-pause">ACHIEVEMENTS</button>
           <button class="btn" id="btn-restart">RESTART</button>
           <button class="btn" id="btn-menu">MAIN MENU</button>
         </div>
@@ -103,8 +107,10 @@
         <div class="stats" id="stats-gameover"></div>
         <h3 class="shop-heading">WEAPONS</h3>
         <div class="weapon-stats" id="weapon-stats"></div>
+        <div id="gameover-challenge" class="gameover-challenge hidden"></div>
         <div class="menu-buttons">
           <button class="btn" id="btn-respawn">RESPAWN</button>
+          <button class="btn primary hidden" id="btn-retry-challenge">PLAY CHALLENGE AGAIN</button>
           <button class="btn primary" id="btn-retry">PLAY AGAIN</button>
           <button class="btn" id="btn-menu2">MAIN MENU</button>
         </div>
@@ -182,6 +188,41 @@
         <button class="btn primary" id="btn-trader-close">LEAVE</button>
       </div>
     </div>
+
+    <div id="achievements" class="overlay hidden">
+      <div class="panel loadout-panel achievements-panel">
+        <h2>🏆 ACHIEVEMENTS</h2>
+        <div id="achievements-count" class="ach-count"></div>
+        <div id="achievements-list" class="achievements-list"></div>
+        <button class="btn primary" id="btn-achievements-back">BACK</button>
+      </div>
+    </div>
+
+    <div id="profile" class="overlay hidden">
+      <div class="panel loadout-panel profile-panel">
+        <h2>👤 PROFILE</h2>
+        <div id="profile-name" class="profile-name"></div>
+        <div id="profile-badges" class="profile-badges"></div>
+        <div id="profile-stats" class="profile-stats"></div>
+        <div id="profile-ach" class="profile-ach"></div>
+        <div id="profile-fav" class="profile-fav"></div>
+        <h3 class="shop-heading">BADGES</h3>
+        <div id="profile-badge-list" class="profile-badge-list"></div>
+        <button class="btn primary" id="btn-profile-back">BACK</button>
+      </div>
+    </div>
+
+    <div id="challenge-confirm" class="overlay hidden">
+      <div class="panel challenge-panel">
+        <h2 class="challenge-confirm-title" id="challenge-confirm-title"></h2>
+        <div id="challenge-confirm-rules" class="challenge-confirm-rules"></div>
+        <div id="challenge-confirm-goal" class="challenge-confirm-goal"></div>
+        <div class="menu-buttons">
+          <button class="btn primary" id="btn-challenge-start">START CHALLENGE</button>
+          <button class="btn" id="btn-challenge-back">BACK</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="src/utils.js"></script>
@@ -200,6 +241,8 @@
   <script src="src/bosses.js"></script>
   <script src="src/ui.js"></script>
   <script src="src/game.js"></script>
+  <script src="src/achievements.js"></script>
+  <script src="src/challenges.js"></script>
   <script src="src/main.js"></script>
 </body>
 </html>

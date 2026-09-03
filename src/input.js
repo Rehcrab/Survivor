@@ -9,6 +9,7 @@ const Input = {
 
   init(canvas, dom) {
     window.addEventListener("keydown", (e) => {
+      if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
       this.keys[e.code] = true;
       if (e.code === "Escape") {
         if (window.game) window.game.togglePause();

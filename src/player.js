@@ -54,6 +54,8 @@ class Player {
   }
 
   get maxWeapons() {
+    const challengeSlots = ChallengeRun.weaponSlots();
+    if (challengeSlots != null) return challengeSlots;
     return CONFIG.player.maxWeapons + (Settings.accountRank("weapon_slot") > 0 ? 1 : 0) + this.runWeaponSlots;
   }
 
