@@ -42,6 +42,7 @@ const CONFIG = {
     bossHealsMin: 1,
     bossHealsMax: 2,
     minionHpMult: 3,
+    maxMinions: 10,
   },
 
   gold: {

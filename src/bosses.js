@@ -85,7 +85,11 @@ class Boss {
     const options = [];
     if (this.attacks.burst) options.push("burst");
     if (this.attacks.charge) options.push("charge");
-    if (this.attacks.summon && this.phase() >= 2) options.push("summon");
+    if (this.attacks.summon && this.phase() >= 2) {
+      let minions = 0;
+      for (const e of game.enemies) if (e.isBossMinion) minions++;
+      if (minions < CONFIG.bossArena.maxMinions) options.push("summon");
+    }
     return pick(options);
   }
 
