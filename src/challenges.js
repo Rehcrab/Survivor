@@ -36,6 +36,23 @@ const ChallengeRun = {
     this.completed = true;
   },
 
+  onOverlordKilled(game) {
+    if (!this.isActive() || this.failed || this.completed) return;
+    const validate = this.def.challenge && this.def.challenge.validate;
+    if (validate) {
+      let result = null;
+      try { result = validate(game); } catch (e) { result = { ok: false, reason: "Challenge requirement not met" }; }
+      if (result && result.ok === false) {
+        this.fail(result.reason || "Challenge requirement not met");
+        game.notice = { text: "❌ " + this.def.name + " Failed: " + (result.reason || ""), timer: 4 };
+        return;
+      }
+    }
+    this.complete();
+    game.notice = { text: "🏆 Challenge Complete: " + this.def.name + "!", timer: 4 };
+    game.audio.play("victory");
+  },
+
   isActive() {
     return !!this.id && !!this.def;
   },

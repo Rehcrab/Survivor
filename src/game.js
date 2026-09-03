@@ -1138,10 +1138,8 @@ class Game {
       if (!this.player.weapons.some(w => w.evolved)) this.stats.overlordNoEvo = true;
       if (this.respawnsUsed === 0 && this.player.hp <= this.player.maxHp * 0.1) this.stats.overlordLowHpNoRespawn = true;
     }
-    if (boss.type === "overlord" && !boss.isEndless && ChallengeRun.isActive() && !ChallengeRun.failed && !ChallengeRun.completed) {
-      ChallengeRun.complete();
-      this.notice = { text: "🏆 Challenge Complete: " + ChallengeRun.def.name + "!", timer: 4 };
-      this.audio.play("victory");
+    if (boss.type === "overlord" && !boss.isEndless) {
+      ChallengeRun.onOverlordKilled(this);
     }
     this.boss = null;
     this.cage = null;
@@ -1159,7 +1157,7 @@ class Game {
 
   endRun() {
     this.state = "GAME_OVER";
-    if (ChallengeRun.isActive() && !ChallengeRun.completed) {
+    if (ChallengeRun.isActive() && !ChallengeRun.completed && !ChallengeRun.failed) {
       ChallengeRun.fail("Defeated before defeating the Overlord");
     }
     if (Settings.bestTime < this.time) {
