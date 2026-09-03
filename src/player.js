@@ -130,7 +130,7 @@ class Player {
   }
 
   addXp(amount) {
-    this.xp += amount * this.xpMult;
+    this.xp += amount * this.xpMult * ChallengeRun.xpMult();
   }
 
   gainLevel() {

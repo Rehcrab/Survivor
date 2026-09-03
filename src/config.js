@@ -212,7 +212,7 @@ const CONFIG = {
   },
 
   challenge: {
-    horde: { enemyCapMult: 2.5, spawnRateMult: 3 },
+    horde: { enemyCapMult: 2.5, spawnRateMult: 3, xpMult: 0.5 },
     boss: { bossHpMult: 2.5, bossDamageMult: 1.3 },
   },
 

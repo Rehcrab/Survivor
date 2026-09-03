@@ -99,6 +99,10 @@ const ChallengeRun = {
     return this.rules().bossDamageMult || 1;
   },
 
+  xpMult() {
+    return this.rules().xpMult != null ? this.rules().xpMult : 1;
+  },
+
   status() {
     if (!this.isActive()) return null;
     let status = "ACTIVE";
