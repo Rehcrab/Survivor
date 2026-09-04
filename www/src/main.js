@@ -72,7 +72,7 @@ Achievements.init();
 AudioMan.setSound(Settings.sound);
 AudioMan.setMusic(Settings.music);
 UI.bind(game);
-Input.init(canvas, { joystick: UI.el.joystick, joystickKnob: UI.el.joystickKnob });
+Input.init(canvas, { joystick: UI.el.joystick, joystickKnob: UI.el["joystick-knob"] });
 
 game.resize();
 window.addEventListener("resize", () => game.resize());
