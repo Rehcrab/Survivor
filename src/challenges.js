@@ -83,6 +83,10 @@ const ChallengeRun = {
     return this.rules().autoLevelUp === true;
   },
 
+  ignoreAccountSlots() {
+    return this.rules().ignoreAccountSlots === true;
+  },
+
   enemyCapMult() {
     return this.rules().enemyCapMult || 1;
   },

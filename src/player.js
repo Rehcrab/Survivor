@@ -56,11 +56,15 @@ class Player {
   get maxWeapons() {
     const challengeSlots = ChallengeRun.weaponSlots();
     if (challengeSlots != null) return challengeSlots;
-    return CONFIG.player.maxWeapons + (Settings.accountRank("weapon_slot") > 0 ? 1 : 0) + this.runWeaponSlots;
+    let slots = CONFIG.player.maxWeapons;
+    if (!ChallengeRun.ignoreAccountSlots()) slots += (Settings.accountRank("weapon_slot") > 0 ? 1 : 0);
+    return slots + this.runWeaponSlots;
   }
 
   get maxPassives() {
-    return CONFIG.player.maxPassives + (Settings.accountRank("passive_slot") > 0 ? 1 : 0) + this.runPassiveSlots;
+    let slots = CONFIG.player.maxPassives;
+    if (!ChallengeRun.ignoreAccountSlots()) slots += (Settings.accountRank("passive_slot") > 0 ? 1 : 0);
+    return slots + this.runPassiveSlots;
   }
 
   get xpMult() {
