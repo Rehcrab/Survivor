@@ -386,7 +386,7 @@ const CONFIG = {
         { damage: 50, cooldown: 450, radius: 175, heal: 2 },
       ],
       upgradeText: ["", "+35% radius", "+60% damage", "+25% radius", "+40% damage & heals 1/tick", "+35% damage & heals 2/tick"],
-      evo: { requires: "berserker", name: "Radiance", icon: "✨", description: "Aura evolves into a burning radiance.", stats: { damage: 70, radius: 240, heal: 4, cooldown: 400 } },
+      evo: { requires: "berserker", name: "Radiance", icon: "☀️", description: "Aura evolves into a burning radiance.", stats: { damage: 70, radius: 240, heal: 4, cooldown: 400 } },
     },
     deflector: {
       name: "Deflector",
@@ -418,7 +418,7 @@ const CONFIG = {
         { damage: 30, cooldown: 1500, projectileCount: 1, bounces: 7, bounceBonus: 12, projectileSpeed: 340, lifetime: 4 },
       ],
       upgradeText: ["", "+1 bounce", "+45% damage", "+4 bounce damage", "+2 bounces & faster", "+50% damage & +4 bounce damage"],
-      evo: { requires: "critical_focus", name: "Plasma Storm", icon: "🌌", description: "Plasma evolves into a raging storm of orbs.", stats: { damage: 55, bounces: 10, bounceBonus: 20, lifetime: 5 } },
+      evo: { requires: "second_chance", name: "Plasma Storm", icon: "🌌", description: "Plasma evolves into a raging storm of orbs.", stats: { damage: 55, bounces: 10, bounceBonus: 20, lifetime: 5 } },
     },
   },
 
@@ -462,6 +462,13 @@ const CONFIG = {
       name: "Amplify", icon: "🔍", maxLevel: 5,
       description: "Increases weapon range and size.",
       effects: ["+15%", "+30%", "+45%", "+60%", "+75%"],
+    },
+    second_chance: {
+      name: "Second Chance", icon: "💖", maxLevel: 6,
+      description: "Cheat death when a lethal hit lands, killing your attacker.",
+      effects: ["90s cd · 0.5s invuln", "84s cd · 0.7s invuln", "78s cd · 0.9s invuln", "72s cd · 1.1s invuln", "66s cd · 1.3s invuln", "60s cd · 1.5s invuln"],
+      cooldowns: [90, 84, 78, 72, 66, 60],
+      invulns: [0.5, 0.7, 0.9, 1.1, 1.3, 1.5],
     },
   },
 

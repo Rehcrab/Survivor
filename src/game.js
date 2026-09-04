@@ -72,6 +72,7 @@ class Game {
     this.notice = null;
     this.toasts = [];
     this.runCommitted = false;
+    this.secondChanceCooldown = 0;
     this.resetStats();
   }
 
@@ -501,6 +502,7 @@ class Game {
     this.interactCooldown = 0;
     this.notice = null;
     this.toasts = [];
+    this.secondChanceCooldown = 0;
     this.shrine = null;
     this.trader = null;
     this.createSpawners();
@@ -1046,7 +1048,7 @@ class Game {
     this.addShake(3);
   }
 
-  hitPlayer(dmg) {
+  hitPlayer(dmg, source) {
     const p = this.player;
     if (p.invulnTimer > 0) return false;
     const applied = p.takeDamage(dmg);
@@ -1056,9 +1058,31 @@ class Game {
     this.addShake(7);
     this.audio.play("playerHit");
     if (p.hp <= 0) {
+      if (this.trySecondChance(source)) return true;
       p.hp = 0;
       this.endRun();
     }
+    return true;
+  }
+
+  trySecondChance(source) {
+    const p = this.player;
+    const level = p.skillLevel("second_chance");
+    if (level <= 0 || this.secondChanceCooldown > 0) return false;
+    const def = skillDef("second_chance");
+    const invuln = def.invulns[level - 1];
+    const cd = def.cooldowns[level - 1];
+    p.hp = 1;
+    p.invulnTimer = invuln;
+    this.secondChanceCooldown = cd;
+    if (source && this.enemies.includes(source)) {
+      this.killEnemy(source, null);
+    }
+    Particles.ring(p.x, p.y, "#6dff9a", 130, 0.5, 6);
+    Particles.burst(p.x, p.y, "#6dff9a", 26, 260, 5);
+    this.addShake(4);
+    this.audio.play("nova");
+    this.notice = { text: "💖 Second Chance!", timer: 2.5 };
     return true;
   }
 
@@ -1255,6 +1279,7 @@ class Game {
     if (this.enemySlow > 0) this.enemySlow -= dt;
     p.tickBuffs(dt);
     if (this.interactCooldown > 0) this.interactCooldown -= dt;
+    if (this.secondChanceCooldown > 0) this.secondChanceCooldown -= dt;
 
     updateWeapons(this, dt);
     updateProjectiles(this, dt);
@@ -1265,7 +1290,7 @@ class Game {
       if (this.cage) this.clampToCage(this.boss);
       this.clampToArena(this.boss);
       if (dist(p.x, p.y, this.boss.x, this.boss.y) < this.boss.radius + p.radius) {
-        this.hitPlayer(this.boss.getDamage());
+        this.hitPlayer(this.boss.getDamage(), this.boss);
       }
     }
 
@@ -1427,7 +1452,7 @@ class Game {
       const rr = pr.radius + p.radius;
       if (dist2(pr.x, pr.y, p.x, p.y) < rr * rr) {
         pr.active = false;
-        this.hitPlayer(pr.damage);
+        this.hitPlayer(pr.damage, pr);
       }
     }
   }
@@ -1440,7 +1465,7 @@ class Game {
       if (e.isSpawner) continue;
       const rr = e.radius + p.radius;
       if (dist2(e.x, e.y, p.x, p.y) < rr * rr) {
-        const applied = this.hitPlayer(e.damage);
+        const applied = this.hitPlayer(e.damage, e);
         if (applied && e.mods && e.mods.includes("vampiric")) {
           e.hp = Math.min(e.hp + e.damage * 0.6, e.maxHp);
           Particles.text(e.x, e.y - e.radius - 4, "+", "#ff5f6d", 13);
