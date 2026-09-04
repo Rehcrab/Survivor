@@ -32,62 +32,53 @@ const Input = {
     const joy = dom.joystick;
     const knob = dom.joystickKnob;
 
-    canvas.addEventListener("touchstart", (e) => this.onTouchStart(e, joy), { passive: false });
-    canvas.addEventListener("touchmove", (e) => this.onTouchMove(e, joy, knob), { passive: false });
-    canvas.addEventListener("touchend", (e) => this.onTouchEnd(e, joy, knob), { passive: false });
-    canvas.addEventListener("touchcancel", (e) => this.onTouchEnd(e, joy, knob), { passive: false });
+    canvas.addEventListener("pointerdown", (e) => this.onJoystickDown(e, joy, canvas), { passive: false });
+    canvas.addEventListener("pointermove", (e) => this.onJoystickMove(e, knob), { passive: false });
+    canvas.addEventListener("pointerup", (e) => this.onJoystickUp(e, joy, knob));
+    canvas.addEventListener("pointercancel", (e) => this.onJoystickUp(e, joy, knob));
   },
 
-  onTouchStart(e, joy) {
+  onJoystickDown(e, joy, canvas) {
+    if (e.pointerType !== "touch") return;
     if (window.game && window.game.state !== "PLAYING") return;
+    const w = window.innerWidth, h = window.innerHeight;
+    if (e.clientX >= w * 0.5 || e.clientY <= h * 0.45) return;
     e.preventDefault();
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const t = e.changedTouches[i];
-      if (this.joystickActive) continue;
-      const w = window.innerWidth, h = window.innerHeight;
-      if (t.clientX < w * 0.5 && t.clientY > h * 0.45) {
-        this.joystickActive = true;
-        this.joystickId = t.identifier;
-        this.joyOriginX = t.clientX;
-        this.joyOriginY = t.clientY;
-        joy.classList.remove("hidden");
-        joy.style.left = (t.clientX - 65) + "px";
-        joy.style.top = (t.clientY - 65) + "px";
-      }
+    if (canvas.setPointerCapture) {
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     }
+    this.joystickActive = true;
+    this.joystickId = e.pointerId;
+    this.joyOriginX = e.clientX;
+    this.joyOriginY = e.clientY;
+    joy.classList.remove("hidden");
+    joy.style.left = (e.clientX - 65) + "px";
+    joy.style.top = (e.clientY - 65) + "px";
   },
 
-  onTouchMove(e, joy, knob) {
-    if (!this.joystickActive) return;
+  onJoystickMove(e, knob) {
+    if (!this.joystickActive || e.pointerId !== this.joystickId) return;
     e.preventDefault();
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const t = e.changedTouches[i];
-      if (t.identifier !== this.joystickId) continue;
-      let dx = t.clientX - this.joyOriginX;
-      let dy = t.clientY - this.joyOriginY;
-      const d = Math.sqrt(dx * dx + dy * dy);
-      if (d > this.joyRadius) {
-        dx = dx / d * this.joyRadius;
-        dy = dy / d * this.joyRadius;
-      }
-      knob.style.transform = "translate(calc(-50% + " + dx + "px), calc(-50% + " + dy + "px))";
-      this.joyVec.x = dx / this.joyRadius;
-      this.joyVec.y = dy / this.joyRadius;
+    let dx = e.clientX - this.joyOriginX;
+    let dy = e.clientY - this.joyOriginY;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d > this.joyRadius) {
+      dx = dx / d * this.joyRadius;
+      dy = dy / d * this.joyRadius;
     }
+    knob.style.transform = "translate(calc(-50% + " + dx + "px), calc(-50% + " + dy + "px))";
+    this.joyVec.x = dx / this.joyRadius;
+    this.joyVec.y = dy / this.joyRadius;
   },
 
-  onTouchEnd(e, joy, knob) {
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const t = e.changedTouches[i];
-      if (this.joystickActive && t.identifier === this.joystickId) {
-        this.joystickActive = false;
-        this.joystickId = null;
-        this.joyVec.x = 0;
-        this.joyVec.y = 0;
-        joy.classList.add("hidden");
-        knob.style.transform = "translate(-50%, -50%)";
-      }
-    }
+  onJoystickUp(e, joy, knob) {
+    if (!this.joystickActive || e.pointerId !== this.joystickId) return;
+    this.joystickActive = false;
+    this.joystickId = null;
+    this.joyVec.x = 0;
+    this.joyVec.y = 0;
+    joy.classList.add("hidden");
+    knob.style.transform = "translate(-50%, -50%)";
   },
 
   getMoveVector() {
