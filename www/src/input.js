@@ -40,6 +40,7 @@ const Input = {
 
   onTouchStart(e, joy) {
     if (window.game && window.game.state !== "PLAYING") return;
+    e.preventDefault();
     for (let i = 0; i < e.changedTouches.length; i++) {
       const t = e.changedTouches[i];
       if (this.joystickActive) continue;
@@ -57,9 +58,11 @@ const Input = {
   },
 
   onTouchMove(e, joy, knob) {
+    if (!this.joystickActive) return;
+    e.preventDefault();
     for (let i = 0; i < e.changedTouches.length; i++) {
       const t = e.changedTouches[i];
-      if (!this.joystickActive || t.identifier !== this.joystickId) continue;
+      if (t.identifier !== this.joystickId) continue;
       let dx = t.clientX - this.joyOriginX;
       let dy = t.clientY - this.joyOriginY;
       const d = Math.sqrt(dx * dx + dy * dy);
