@@ -464,11 +464,11 @@ const CONFIG = {
       effects: ["+15%", "+30%", "+45%", "+60%", "+75%"],
     },
     second_chance: {
-      name: "Second Chance", icon: "💖", maxLevel: 6,
+      name: "Second Chance", icon: "💖", maxLevel: 5,
       description: "Cheat death when a lethal hit lands, killing your attacker.",
-      effects: ["90s cd · 0.5s invuln", "84s cd · 0.7s invuln", "78s cd · 0.9s invuln", "72s cd · 1.1s invuln", "66s cd · 1.3s invuln", "60s cd · 1.5s invuln"],
-      cooldowns: [90, 84, 78, 72, 66, 60],
-      invulns: [0.5, 0.7, 0.9, 1.1, 1.3, 1.5],
+      effects: ["90s cd · 0.5s invuln", "84s cd · 0.7s invuln", "78s cd · 0.9s invuln", "72s cd · 1.1s invuln", "66s cd · 1.3s invuln"],
+      cooldowns: [90, 84, 78, 72, 66],
+      invulns: [0.5, 0.7, 0.9, 1.1, 1.3],
     },
   },
 

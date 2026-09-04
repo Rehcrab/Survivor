@@ -73,6 +73,7 @@ class Game {
     this.toasts = [];
     this.runCommitted = false;
     this.secondChanceCooldown = 0;
+    this.secondChanceInvuln = 0;
     this.resetStats();
   }
 
@@ -503,6 +504,7 @@ class Game {
     this.notice = null;
     this.toasts = [];
     this.secondChanceCooldown = 0;
+    this.secondChanceInvuln = 0;
     this.shrine = null;
     this.trader = null;
     this.createSpawners();
@@ -1075,6 +1077,7 @@ class Game {
     p.hp = 1;
     p.invulnTimer = invuln;
     this.secondChanceCooldown = cd;
+    this.secondChanceInvuln = invuln;
     if (source && this.enemies.includes(source)) {
       this.killEnemy(source, null);
     }
@@ -1280,6 +1283,7 @@ class Game {
     p.tickBuffs(dt);
     if (this.interactCooldown > 0) this.interactCooldown -= dt;
     if (this.secondChanceCooldown > 0) this.secondChanceCooldown -= dt;
+    if (this.secondChanceInvuln > 0) this.secondChanceInvuln -= dt;
 
     updateWeapons(this, dt);
     updateProjectiles(this, dt);
@@ -1751,6 +1755,18 @@ class Game {
     }
     if (p.overloadTimer > 0) buffs.push({ icon: "⚡", name: "Overload", timer: p.overloadTimer, max: 10 });
     if (this.enemySlow > 0) buffs.push({ icon: "⏳", name: "Time Warp", timer: this.enemySlow, max: 8 });
+
+    const scLevel = p.skillLevel("second_chance");
+    if (scLevel > 0) {
+      const scDef = skillDef("second_chance");
+      if (this.secondChanceInvuln > 0) {
+        buffs.push({ icon: "💖", name: "Second Chance", timer: this.secondChanceInvuln, max: scDef.invulns[scLevel - 1], color: "rgba(109, 255, 154, 0.7)" });
+      } else if (this.secondChanceCooldown > 0) {
+        buffs.push({ icon: "💖", name: "Second Chance", timer: this.secondChanceCooldown, max: scDef.cooldowns[scLevel - 1], color: "rgba(139, 147, 184, 0.5)" });
+      } else {
+        buffs.push({ icon: "💖", name: "Ready", timer: 0, max: 1, ready: true });
+      }
+    }
     return buffs;
   }
 
@@ -1765,8 +1781,10 @@ class Game {
     for (const b of buffs) {
       ctx.fillStyle = "rgba(0,0,0,0.55)";
       ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = "rgba(57, 208, 255, 0.65)";
-      ctx.fillRect(x, y, w * clamp(b.timer / b.max, 0, 1), h);
+      if (!b.ready) {
+        ctx.fillStyle = b.color || "rgba(57, 208, 255, 0.65)";
+        ctx.fillRect(x, y, w * clamp(b.timer / b.max, 0, 1), h);
+      }
       ctx.strokeStyle = "rgba(255,255,255,0.3)";
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, w, h);
@@ -1774,7 +1792,7 @@ class Game {
       ctx.font = "bold 11px sans-serif";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(b.icon + " " + b.name + " " + Math.ceil(b.timer) + "s", x + 4, y + h / 2);
+      ctx.fillText(b.icon + " " + b.name + (b.ready ? "" : " " + Math.ceil(b.timer) + "s"), x + 4, y + h / 2);
       x += w + gap;
     }
   }
