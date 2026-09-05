@@ -367,6 +367,23 @@ html, body {
   filter: brightness(1.08);
 }
 
+#btn-respawn {
+  background: #2a2f45;
+  color: #8b93b8;
+  border-color: #333a55;
+}
+
+#btn-respawn.respawn-ok {
+  background: linear-gradient(135deg, #1fbf6b, #3ddc84);
+  color: #04130a;
+  border: none;
+  box-shadow: 0 6px 20px rgba(61, 220, 132, 0.35);
+}
+
+#btn-respawn.respawn-ok:hover {
+  filter: brightness(1.08);
+}
+
 .best-score {
   margin-top: 20px;
   color: var(--muted);

@@ -456,15 +456,19 @@ const UI = {
     if (ChallengeRun.noRespawn()) {
       btn.textContent = "Respawns Disabled";
       btn.disabled = true;
+      btn.classList.remove("respawn-ok");
       return;
     }
     if (game.respawnsUsed >= CONFIG.respawn.maxRespawns) {
       btn.textContent = "No respawns left";
       btn.disabled = true;
+      btn.classList.remove("respawn-ok");
     } else {
       const cost = game.respawnCost();
       btn.textContent = "RESPAWN (" + cost + " gold)";
-      btn.disabled = Settings.gold < cost;
+      const affordable = Settings.gold >= cost;
+      btn.disabled = !affordable;
+      btn.classList.toggle("respawn-ok", affordable);
     }
   },
 

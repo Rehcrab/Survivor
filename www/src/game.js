@@ -1199,6 +1199,7 @@ class Game {
       { label: "Score", value: this.score() },
       { label: "Gold Gained", value: "+" + Math.round(this.stats.goldGained) },
       { label: "Gold Spent", value: "-" + Math.round(this.stats.goldSpent) },
+      { label: "Total Gold", value: Settings.gold },
     ];
     UI.showStats(UI.el["stats-gameover"], stats);
     UI.showWeaponStats(UI.el["weapon-stats"], this.buildWeaponBreakdown());
