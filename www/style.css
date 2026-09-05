@@ -715,6 +715,12 @@ html, body {
   border-color: var(--accent);
 }
 
+.map-btn.active {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+}
+
 .gold { color: var(--gold); text-shadow: 0 0 8px rgba(255, 209, 102, 0.5); }
 
 .loadout-panel {

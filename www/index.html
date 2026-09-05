@@ -29,6 +29,7 @@
         <button id="speed-1" class="icon-btn speed-btn active" data-speed="1">1x</button>
         <button id="speed-2" class="icon-btn speed-btn" data-speed="2">2x</button>
         <button id="speed-4" class="icon-btn speed-btn" data-speed="4">4x</button>
+        <button id="map-btn" class="icon-btn map-btn" aria-label="Difficulty map">🗺️</button>
         <button id="pause-btn" class="icon-btn" aria-label="Pause">II</button>
       </div>
 
@@ -145,7 +146,7 @@
     <div id="howto" class="overlay hidden">
       <div class="panel howto-panel">
         <h2>HOW TO PLAY</h2>
-        <ul class="howto-list">
+        <ul class="howto-list" id="howto-list-short">
           <li><b>Move</b> — WASD (desktop) or the virtual joystick (mobile)</li>
           <li><b>Attack</b> — your weapons fire automatically</li>
           <li><b>Collect</b> XP gems to level up</li>
@@ -154,6 +155,27 @@
           <li><b>Speed</b> — press F / G / H (or tap the button) for 1x / 2x / 4x</li>
           <li><b>Survive</b> 20 minutes and beat the final boss</li>
         </ul>
+        <ul class="howto-list hidden" id="howto-list-long">
+          <li><b>Move</b> — WASD on desktop, or the virtual joystick (touch the lower-left) on mobile.</li>
+          <li><b>Attack</b> — all weapons fire automatically; just position yourself.</li>
+          <li><b>XP &amp; Leveling</b> — enemies drop XP gems. Collect them to level up and pick 1 of 3 upgrades.</li>
+          <li><b>Reroll</b> — unhappy with your 3 choices? Use a reroll to draw a new set.</li>
+          <li><b>Weapons &amp; Passives</b> — you can carry up to 4 weapons and 4 passives (buy extra slots in the shop or from the trader).</li>
+          <li><b>Evolutions</b> — a maxed weapon + a specific passive = an evolution. They appear as a special card.</li>
+          <li><b>Speed</b> — F = 1x, G = 2x, H = 4x (or tap the 1x/2x/4x buttons). Speed affects everything, including how fast danger ramps up.</li>
+          <li><b>Difficulty Map</b> — hold Z (or tap the 🗺️ button) to see zones: green = easy, yellow = medium, red = hard. Harder zones spawn tougher enemies and better rewards.</li>
+          <li><b>Shrine</b> — walk up to a shrine to buy blessings (damage, speed, HP, crit, pickup). Cost doubles each use.</li>
+          <li><b>Trader</b> — a roaming trader sells rerolls, deletes, heals, extra slots, temporary buffs, and weapon masteries. He restocks over time.</li>
+          <li><b>Gold</b> — earn gold from kills, bosses, and chests; spend it in the shop, shrine, and trader. Gold persists between runs.</li>
+          <li><b>Bosses</b> — 4 story bosses await (Warden, Tyrant, Leviathan, Overlord), each with unique attacks and special abilities. Defeat the Overlord around 20 minutes.</li>
+          <li><b>Endless Mode</b> — after the Overlord, endless bosses keep spawning so you can chase a high score.</li>
+          <li><b>Respawn</b> — if you die, you can spend gold to revive (up to twice per run).</li>
+          <li><b>Masteries</b> — after evolving a weapon, the trader offers run-long masteries that further boost it.</li>
+          <li><b>Chests</b> — bosses drop chests; open them to spin for free upgrades.</li>
+          <li><b>Elites &amp; Modifiers</b> — orange elites have modifiers (armored, swift, berserk, regenerating, split, vampiric) that change how they fight.</li>
+          <li><b>Challenges</b> — check the Achievements screen for Insane challenges with special rules and difficulty tiers.</li>
+        </ul>
+        <button class="btn" id="btn-howto-toggle">MORE DETAILS</button>
         <button class="btn primary" id="btn-howto-back">BACK</button>
       </div>
     </div>

@@ -64,7 +64,7 @@ const UI = {
   cache() {
     const ids = [
       "canvas", "hud", "hp-fill", "hp-text", "xp-fill", "level-badge", "timer",
-      "pause-btn", "speed-1", "speed-2", "speed-4", "bossbar-wrap", "bossbar-fill", "bossbar-label",
+      "pause-btn", "speed-1", "speed-2", "speed-4", "map-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
       "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader", "achievements", "profile", "challenge-confirm",
       "upgrade-cards", "stats-gameover", "stats-victory", "weapon-stats", "best-score", "menu-gold",
@@ -77,6 +77,7 @@ const UI = {
       "achievements-list", "achievements-count",
       "profile-name", "profile-badges", "profile-stats", "profile-ach", "profile-fav", "profile-badge-list",
       "pause-challenge", "gameover-challenge",
+      "howto-list-short", "howto-list-long", "btn-howto-toggle",
       "challenge-confirm-title", "challenge-confirm-rules", "challenge-confirm-goal",
     ];
     ids.forEach(id => { this.el[id] = document.getElementById(id); });
@@ -364,7 +365,28 @@ const UI = {
 
   bind(game) {
     document.getElementById("btn-play").addEventListener("click", () => { AudioMan.resume(); AudioMan.play("click"); game.startRun(); });
-    document.getElementById("btn-howto").addEventListener("click", () => { AudioMan.play("click"); this.show("howto"); });
+    document.getElementById("btn-howto").addEventListener("click", () => {
+      AudioMan.play("click");
+      this.el["howto-list-short"].classList.remove("hidden");
+      this.el["howto-list-long"].classList.add("hidden");
+      this.el["btn-howto-toggle"].textContent = "MORE DETAILS";
+      this.show("howto");
+    });
+    document.getElementById("btn-howto-toggle").addEventListener("click", () => {
+      AudioMan.play("click");
+      const short = this.el["howto-list-short"];
+      const long = this.el["howto-list-long"];
+      const showingLong = !long.classList.contains("hidden");
+      if (showingLong) {
+        long.classList.add("hidden");
+        short.classList.remove("hidden");
+        this.el["btn-howto-toggle"].textContent = "MORE DETAILS";
+      } else {
+        short.classList.add("hidden");
+        long.classList.remove("hidden");
+        this.el["btn-howto-toggle"].textContent = "LESS DETAILS";
+      }
+    });
     document.getElementById("btn-settings").addEventListener("click", () => { AudioMan.play("click"); this.show("settings"); });
     document.getElementById("btn-settings-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); });
     document.getElementById("btn-howto-back").addEventListener("click", () => { AudioMan.play("click"); this.show("menu"); });
@@ -397,6 +419,11 @@ const UI = {
     document.getElementById("speed-1").addEventListener("click", () => game.setSpeed(1));
     document.getElementById("speed-2").addEventListener("click", () => game.setSpeed(2));
     document.getElementById("speed-4").addEventListener("click", () => game.setSpeed(4));
+    document.getElementById("map-btn").addEventListener("click", () => {
+      AudioMan.play("click");
+      Input.mapToggle = !Input.mapToggle;
+      this.el["map-btn"].classList.toggle("active", Input.mapToggle);
+    });
     document.getElementById("btn-reroll").addEventListener("click", () => game.reroll());
 
     this.bindSetting("set-sound", "sound");

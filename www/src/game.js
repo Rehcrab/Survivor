@@ -1578,7 +1578,7 @@ class Game {
 
     this.drawBackground(ctx, halfW, halfH);
     this.drawArenaBorder(ctx);
-    if (Input.zHeld()) this.drawZones(ctx);
+    if (Input.mapView()) this.drawZones(ctx);
     for (const d of this.decor) {
       if (this.inView(d.x, d.y, halfW, halfH)) this.drawDecorItem(ctx, d);
     }
@@ -1962,7 +1962,7 @@ class Game {
     ctx.lineWidth = 2;
     ctx.strokeRect(mx, my, size, size);
 
-    if (Input.zHeld()) {
+    if (Input.mapView()) {
       const zcx = mx + size, zcy = my;
       ctx.save();
       ctx.beginPath();

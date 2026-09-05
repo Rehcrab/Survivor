@@ -6,6 +6,7 @@ const Input = {
   joyOriginY: 0,
   joyVec: { x: 0, y: 0 },
   joyRadius: 48,
+  mapToggle: false,
 
   init(canvas, dom) {
     window.addEventListener("keydown", (e) => {
@@ -102,5 +103,9 @@ const Input = {
 
   zHeld() {
     return this.keys["KeyZ"];
+  },
+
+  mapView() {
+    return this.keys["KeyZ"] || this.mapToggle;
   },
 };
