@@ -78,6 +78,17 @@ game.resize();
 window.addEventListener("resize", () => game.resize());
 window.addEventListener("orientationchange", () => setTimeout(() => game.resize(), 200));
 
+function lockLandscape() {
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock("landscape").catch(() => {});
+    }
+  } catch (e) { /* ignore */ }
+}
+["pointerdown", "touchstart", "keydown"].forEach((ev) => {
+  window.addEventListener(ev, lockLandscape, { once: true, passive: true });
+});
+
 UI.show("menu");
 UI.updateBestScore();
 UI.updateGold();
