@@ -14,8 +14,10 @@ const Input = {
       if (e.code === "Escape") {
         if (window.game) window.game.togglePause();
       }
-      if (e.code === "KeyF") {
-        if (window.game && (window.game.state === "PLAYING" || window.game.state === "PAUSED")) window.game.cycleSpeed();
+      if (e.code === "KeyF" || e.code === "KeyG" || e.code === "KeyH") {
+        if (window.game && (window.game.state === "PLAYING" || window.game.state === "PAUSED")) {
+          window.game.setSpeed(e.code === "KeyF" ? 1 : e.code === "KeyG" ? 2 : 4);
+        }
       }
       if (e.code === "KeyE" || e.code === "Space") {
         if (window.game && window.game.state === "PLAYING") window.game.tryInteract();

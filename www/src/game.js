@@ -1553,9 +1553,11 @@ class Game {
     }
   }
 
-  cycleSpeed() {
+  setSpeed(mult) {
     if (ChallengeRun.speedLock() != null) return;
-    this.speedMult = this.speedMult >= 4 ? 1 : this.speedMult * 2;
+    if (mult !== 1 && mult !== 2 && mult !== 4) return;
+    if (this.speedMult === mult) return;
+    this.speedMult = mult;
     UI.updateSpeedLabel(this);
     this.audio.play("click");
   }

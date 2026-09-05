@@ -64,7 +64,7 @@ const UI = {
   cache() {
     const ids = [
       "canvas", "hud", "hp-fill", "hp-text", "xp-fill", "level-badge", "timer",
-      "pause-btn", "speed-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
+      "pause-btn", "speed-1", "speed-2", "speed-4", "bossbar-wrap", "bossbar-fill", "bossbar-label",
       "bottom-left", "bottom-right", "joystick", "joystick-knob",
       "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader", "achievements", "profile", "challenge-confirm",
       "upgrade-cards", "stats-gameover", "stats-victory", "weapon-stats", "best-score", "menu-gold",
@@ -394,7 +394,9 @@ const UI = {
     document.getElementById("btn-menu3").addEventListener("click", () => game.toMenu());
 
     document.getElementById("pause-btn").addEventListener("click", () => game.togglePause());
-    document.getElementById("speed-btn").addEventListener("click", () => game.cycleSpeed());
+    document.getElementById("speed-1").addEventListener("click", () => game.setSpeed(1));
+    document.getElementById("speed-2").addEventListener("click", () => game.setSpeed(2));
+    document.getElementById("speed-4").addEventListener("click", () => game.setSpeed(4));
     document.getElementById("btn-reroll").addEventListener("click", () => game.reroll());
 
     this.bindSetting("set-sound", "sound");
@@ -436,7 +438,11 @@ const UI = {
   },
 
   updateSpeedLabel(game) {
-    if (this.el["speed-btn"]) this.el["speed-btn"].textContent = game.speedMult + "x";
+    for (const id of ["speed-1", "speed-2", "speed-4"]) {
+      const btn = this.el[id];
+      if (!btn) continue;
+      btn.classList.toggle("active", parseInt(btn.dataset.speed, 10) === game.speedMult);
+    }
   },
 
   updateGold() {

@@ -684,10 +684,16 @@ html, body {
 
 .speed-btn {
   width: auto;
-  min-width: 44px;
-  padding: 0 10px;
+  min-width: 36px;
+  padding: 0 8px;
   border-radius: 10px;
   font-variant-numeric: tabular-nums;
+}
+
+.speed-btn.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
 }
 
 .gold { color: var(--gold); text-shadow: 0 0 8px rgba(255, 209, 102, 0.5); }
