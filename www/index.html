@@ -38,6 +38,8 @@
         <div id="bossbar"><div id="bossbar-fill"></div></div>
       </div>
 
+      <button id="interact-btn" class="interact-btn hidden">⛩️</button>
+
       <div id="bottom-left" class="build-row"></div>
       <div id="bottom-right" class="build-row"></div>
     </div>
@@ -93,6 +95,14 @@
           <label class="setting"><span>Sound</span><input type="checkbox" id="pause-set-sound" checked /></label>
           <label class="setting"><span>Music</span><input type="checkbox" id="pause-set-music" checked /></label>
           <label class="setting"><span>Screen Shake</span><input type="checkbox" id="pause-set-shake" checked /></label>
+        </div>
+        <div class="perf-settings">
+          <span class="perf-label">PERFORMANCE</span>
+          <div class="perf-buttons">
+            <button class="perf-btn" id="perf-off" data-perf="off">HIGH</button>
+            <button class="perf-btn" id="perf-low" data-perf="low">LOW</button>
+            <button class="perf-btn" id="perf-ultra" data-perf="ultra">ULTRA LOW</button>
+          </div>
         </div>
         <div id="pause-challenge" class="pause-challenge hidden"></div>
         <div class="menu-buttons">

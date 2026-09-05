@@ -45,6 +45,7 @@ function createEnemy(type, x, y, opts) {
     kby: 0,
     flash: 0,
     hitFlash: 0,
+    aiAccum: 0,
     mods: [],
     shield: 0,
     isBossMinion: false,
@@ -76,16 +77,30 @@ function updateEnemies(game, dt) {
     const e = arr[i];
     if (e.isSpawner) continue;
 
-    e.x += e.kbx * dt;
-    e.y += e.kby * dt;
-    e.kbx *= Math.pow(0.0001, dt);
-    e.kby *= Math.pow(0.0001, dt);
-    if (e.hitFlash > 0) e.hitFlash -= dt;
+    let step = dt;
+    if (perfUltra() && dist2(player.x, player.y, e.x, e.y) > 700 * 700) {
+      e.aiAccum = (e.aiAccum || 0) + dt;
+      if (e.aiAccum < 0.066) {
+        e.x += e.kbx * dt;
+        e.y += e.kby * dt;
+        e.kbx *= Math.pow(0.0001, dt);
+        e.kby *= Math.pow(0.0001, dt);
+        continue;
+      }
+      step = e.aiAccum;
+      e.aiAccum = 0;
+    }
+
+    e.x += e.kbx * step;
+    e.y += e.kby * step;
+    e.kbx *= Math.pow(0.0001, step);
+    e.kby *= Math.pow(0.0001, step);
+    if (e.hitFlash > 0) e.hitFlash -= step;
 
     let speedMult = 1;
     if (e.mods && e.mods.includes("berserk") && e.hp < e.maxHp * 0.5) speedMult = 1.5;
     if (e.mods && e.mods.includes("regenerating") && e.hp < e.maxHp) {
-      e.hp = Math.min(e.hp + e.maxHp * 0.02 * dt, e.maxHp);
+      e.hp = Math.min(e.hp + e.maxHp * 0.02 * step, e.maxHp);
     }
 
     const dx = player.x - e.x;
@@ -94,13 +109,13 @@ function updateEnemies(game, dt) {
     const nx = dx / d, ny = dy / d;
 
     if (e.homeX != null && dist2(player.x, player.y, e.homeX, e.homeY) > e.leashRange * e.leashRange) {
-      e.wanderTimer = (e.wanderTimer || 0) - dt;
+      e.wanderTimer = (e.wanderTimer || 0) - step;
       if (e.wanderTimer <= 0) {
         e.wanderTimer = rand(1, 2.5);
         e.wanderAngle = rand(0, Math.PI * 2);
       }
-      e.x += Math.cos(e.wanderAngle) * e.speed * slow * speedMult * 0.6 * dt;
-      e.y += Math.sin(e.wanderAngle) * e.speed * slow * speedMult * 0.6 * dt;
+      e.x += Math.cos(e.wanderAngle) * e.speed * slow * speedMult * 0.6 * step;
+      e.y += Math.sin(e.wanderAngle) * e.speed * slow * speedMult * 0.6 * step;
       if (dist2(e.x, e.y, e.homeX, e.homeY) > e.leashRange * e.leashRange) {
         const ha = angleTo(e.x, e.y, e.homeX, e.homeY);
         e.x = e.homeX + Math.cos(ha) * e.leashRange;
@@ -114,18 +129,18 @@ function updateEnemies(game, dt) {
         moveX = -ny;
         moveY = nx;
       }
-      e.x += moveX * e.speed * slow * speedMult * dt;
-      e.y += moveY * e.speed * slow * speedMult * dt;
+      e.x += moveX * e.speed * slow * speedMult * step;
+      e.y += moveY * e.speed * slow * speedMult * step;
 
-      e.fireTimer -= dt;
+      e.fireTimer -= step;
       if (e.fireTimer <= 0 && d < 480) {
         e.fireTimer = e.fireCooldown;
         const a = angleTo(e.x, e.y, player.x, player.y) + rand(-0.12, 0.12);
         game.fireEnemyProjectile(e.x, e.y, Math.cos(a), Math.sin(a), e.projSpeed, e.projDamage);
       }
     } else {
-      e.x += nx * e.speed * slow * speedMult * dt;
-      e.y += ny * e.speed * slow * speedMult * dt;
+      e.x += nx * e.speed * slow * speedMult * step;
+      e.y += ny * e.speed * slow * speedMult * step;
     }
 
     e.x = clamp(e.x, -game.arenaHalfW + e.radius, game.arenaHalfW - e.radius);
@@ -161,7 +176,7 @@ function drawEnemy(ctx, e) {
   }
 
   ctx.globalAlpha = 1;
-  ctx.fillStyle = e.hitFlash > 0 ? "#ffffff" : e.color;
+  ctx.fillStyle = (!perfLow() && e.hitFlash > 0) ? "#ffffff" : e.color;
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fill();

@@ -2,6 +2,7 @@ const Settings = {
   sound: true,
   music: true,
   shake: true,
+  performance: "off",
   bestTime: 0,
   gold: 0,
   unlockedWeapons: ["magic_bolt"],
@@ -18,6 +19,7 @@ const Settings = {
       this.sound = s.sound !== false;
       this.music = s.music !== false;
       this.shake = s.shake !== false;
+      this.performance = (s.performance === "low" || s.performance === "ultra") ? s.performance : "off";
       this.bestTime = s.bestTime || 0;
       this.gold = s.gold || 0;
       this.unlockedWeapons = Array.isArray(s.unlockedWeapons) ? s.unlockedWeapons : ["magic_bolt"];
@@ -40,6 +42,7 @@ const Settings = {
         sound: this.sound,
         music: this.music,
         shake: this.shake,
+        performance: this.performance,
         bestTime: this.bestTime,
         gold: this.gold,
         unlockedWeapons: this.unlockedWeapons,
@@ -65,6 +68,14 @@ const Settings = {
 const canvas = document.getElementById("canvas");
 const game = new Game(canvas);
 window.game = game;
+
+function perfLow() {
+  return Settings.performance === "low" || Settings.performance === "ultra";
+}
+
+function perfUltra() {
+  return Settings.performance === "ultra";
+}
 
 UI.cache();
 Settings.load();

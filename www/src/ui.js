@@ -65,7 +65,7 @@ const UI = {
     const ids = [
       "canvas", "hud", "hp-fill", "hp-text", "xp-fill", "level-badge", "timer",
       "pause-btn", "speed-1", "speed-2", "speed-4", "map-btn", "bossbar-wrap", "bossbar-fill", "bossbar-label",
-      "bottom-left", "bottom-right", "joystick", "joystick-knob",
+      "bottom-left", "bottom-right", "joystick", "joystick-knob", "interact-btn",
       "menu", "levelup", "pause", "gameover", "victory", "settings", "howto", "shop", "shrine", "trader", "achievements", "profile", "challenge-confirm",
       "upgrade-cards", "stats-gameover", "stats-victory", "weapon-stats", "best-score", "menu-gold",
       "btn-respawn",
@@ -78,6 +78,7 @@ const UI = {
       "profile-name", "profile-badges", "profile-stats", "profile-ach", "profile-fav", "profile-badge-list",
       "pause-challenge", "gameover-challenge",
       "howto-list-short", "howto-list-long", "btn-howto-toggle",
+      "perf-off", "perf-low", "perf-ultra",
       "challenge-confirm-title", "challenge-confirm-rules", "challenge-confirm-goal",
     ];
     ids.forEach(id => { this.el[id] = document.getElementById(id); });
@@ -112,6 +113,16 @@ const UI = {
       this.el["bossbar-fill"].style.width = clamp(game.boss.hp / game.boss.maxHp, 0, 1) * 100 + "%";
     } else {
       this.el["bossbar-wrap"].classList.remove("visible");
+    }
+
+    const ib = this.el["interact-btn"];
+    if (ib) {
+      if (Input.isTouchDevice() && game.interactable && game.state === "PLAYING") {
+        ib.textContent = game.interactable === "shrine" ? "⛩️ SHRINE" : "🏪 TRADER";
+        ib.classList.remove("hidden");
+      } else {
+        ib.classList.add("hidden");
+      }
     }
   },
 
@@ -424,6 +435,7 @@ const UI = {
       Input.mapToggle = !Input.mapToggle;
       this.el["map-btn"].classList.toggle("active", Input.mapToggle);
     });
+    document.getElementById("interact-btn").addEventListener("click", () => game.tryInteract());
     document.getElementById("btn-reroll").addEventListener("click", () => game.reroll());
 
     this.bindSetting("set-sound", "sound");
@@ -432,7 +444,26 @@ const UI = {
     this.bindSetting("pause-set-sound", "sound");
     this.bindSetting("pause-set-music", "music");
     this.bindSetting("pause-set-shake", "shake");
+    for (const id of ["perf-off", "perf-low", "perf-ultra"]) {
+      const btn = this.el[id];
+      if (btn) btn.addEventListener("click", () => this.setPerformance(btn.dataset.perf));
+    }
+    this.updatePerfButtons();
     this.syncSettings();
+  },
+
+  setPerformance(level) {
+    Settings.performance = level;
+    Settings.save();
+    this.updatePerfButtons();
+    AudioMan.play("click");
+  },
+
+  updatePerfButtons() {
+    for (const id of ["perf-off", "perf-low", "perf-ultra"]) {
+      const btn = this.el[id];
+      if (btn) btn.classList.toggle("active", btn.dataset.perf === Settings.performance);
+    }
   },
 
   bindSetting(id, key) {

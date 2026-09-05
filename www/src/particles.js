@@ -20,9 +20,15 @@ const Particles = {
       text: opts.text || null,
     });
     if (this.list.length > 1500) this.list.splice(0, this.list.length - 1500);
+    if (perfLow()) {
+      const cap = perfUltra() ? 400 : 800;
+      if (this.list.length > cap) this.list.splice(0, this.list.length - cap);
+    }
   },
 
   burst(x, y, color, count, speed, size) {
+    if (perfUltra()) count = Math.ceil(count * 0.25);
+    else if (perfLow()) count = Math.ceil(count * 0.5);
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const s = rand(speed * 0.4, speed);
@@ -39,6 +45,7 @@ const Particles = {
   },
 
   ring(x, y, color, maxRadius, life, width) {
+    if (perfUltra()) return;
     this.spawn(x, y, {
       life: life,
       size: maxRadius,
@@ -49,6 +56,8 @@ const Particles = {
   },
 
   text(x, y, str, color, size) {
+    if (perfUltra()) return;
+    if (perfLow() && Math.random() < 0.5) return;
     this.spawn(x, y, {
       vy: -60,
       life: 0.8,

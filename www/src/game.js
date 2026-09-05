@@ -594,7 +594,8 @@ class Game {
   }
 
   addShake(amount) {
-    if (Settings.shake) this.camera.addShake(amount);
+    if (perfUltra()) return;
+    if (Settings.shake) this.camera.addShake(perfLow() ? amount * 0.5 : amount);
   }
 
   queueAchievementToasts(list) {
@@ -1579,8 +1580,10 @@ class Game {
     this.drawBackground(ctx, halfW, halfH);
     this.drawArenaBorder(ctx);
     if (Input.mapView()) this.drawZones(ctx);
-    for (const d of this.decor) {
-      if (this.inView(d.x, d.y, halfW, halfH)) this.drawDecorItem(ctx, d);
+    if (!perfLow()) {
+      for (const d of this.decor) {
+        if (this.inView(d.x, d.y, halfW, halfH)) this.drawDecorItem(ctx, d);
+      }
     }
     if (this.cage) this.drawCage(ctx);
 
@@ -1612,7 +1615,7 @@ class Game {
 
     this.drawVignette(ctx);
 
-    if (this.interactable && this.state === "PLAYING") {
+    if (this.interactable && this.state === "PLAYING" && !Input.isTouchDevice()) {
       ctx.fillStyle = "#e8ecf8";
       ctx.font = "bold 18px system-ui, sans-serif";
       ctx.textAlign = "center";
@@ -1677,24 +1680,26 @@ class Game {
       }
     }
 
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let x = left; x <= right; x += tile) { ctx.moveTo(x, top); ctx.lineTo(x, bottom); }
-    for (let y = top; y <= bottom; y += tile) { ctx.moveTo(left, y); ctx.lineTo(right, y); }
-    ctx.stroke();
+    if (!perfUltra()) {
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = left; x <= right; x += tile) { ctx.moveTo(x, top); ctx.lineTo(x, bottom); }
+      for (let y = top; y <= bottom; y += tile) { ctx.moveTo(left, y); ctx.lineTo(right, y); }
+      ctx.stroke();
 
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
-    ctx.lineWidth = 1;
-    for (let x = left; x <= right; x += tile) {
-      for (let y = top; y <= bottom; y += tile) {
-        const v = tileHash(Math.floor(x / tile) + 71, Math.floor(y / tile) - 29);
-        if (v > 0.7) {
-          ctx.beginPath();
-          ctx.moveTo(x + v * tile, y + (1 - v) * tile);
-          ctx.lineTo(x + v * tile + (v - 0.5) * 46, y + (1 - v) * tile - 24);
-          ctx.lineTo(x + v * tile + (v - 0.5) * 46 + 8, y + (1 - v) * tile - 30);
-          ctx.stroke();
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
+      ctx.lineWidth = 1;
+      for (let x = left; x <= right; x += tile) {
+        for (let y = top; y <= bottom; y += tile) {
+          const v = tileHash(Math.floor(x / tile) + 71, Math.floor(y / tile) - 29);
+          if (v > 0.7) {
+            ctx.beginPath();
+            ctx.moveTo(x + v * tile, y + (1 - v) * tile);
+            ctx.lineTo(x + v * tile + (v - 0.5) * 46, y + (1 - v) * tile - 24);
+            ctx.lineTo(x + v * tile + (v - 0.5) * 46 + 8, y + (1 - v) * tile - 30);
+            ctx.stroke();
+          }
         }
       }
     }
@@ -2021,17 +2026,24 @@ class Game {
   }
 
   drawGem(ctx, g) {
+    const color = g.value >= 40 ? "#ffd166" : g.value >= 15 ? "#5ad1ff" : "#6a8cff";
+    if (perfUltra()) {
+      ctx.fillStyle = color;
+      ctx.fillRect(g.x - g.r * 0.7, g.y - g.r * 0.7, g.r * 1.4, g.r * 1.4);
+      return;
+    }
     const bob = Math.sin(g.bob * 3) * 1.5;
     const y = g.y + bob;
-    const color = g.value >= 40 ? "#ffd166" : g.value >= 15 ? "#5ad1ff" : "#6a8cff";
     ctx.save();
     ctx.translate(g.x, y);
     ctx.rotate(Math.PI / 4);
     ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 8;
+    if (!perfLow()) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
     ctx.fillRect(-g.r * 0.7, -g.r * 0.7, g.r * 1.4, g.r * 1.4);
-    ctx.shadowBlur = 0;
+    if (!perfLow()) ctx.shadowBlur = 0;
     ctx.fillStyle = "rgba(255,255,255,0.6)";
     ctx.fillRect(-g.r * 0.3, -g.r * 0.3, g.r * 0.6, g.r * 0.6);
     ctx.restore();
@@ -2291,12 +2303,11 @@ class Game {
         const pulse = 1 + Math.sin(p.age * 20) * 0.15;
         ctx.save();
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 14;
+        if (!perfLow()) { ctx.shadowColor = p.color; ctx.shadowBlur = 14; }
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius * pulse, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
+        if (!perfLow()) ctx.shadowBlur = 0;
         ctx.fillStyle = "rgba(255,255,255,0.8)";
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius * 0.4, 0, Math.PI * 2);
@@ -2307,12 +2318,11 @@ class Game {
 
       ctx.save();
       ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 10;
+      if (!perfLow()) { ctx.shadowColor = p.color; ctx.shadowBlur = 10; }
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
+      if (!perfLow()) ctx.shadowBlur = 0;
       ctx.fillStyle = p.friendly ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.35)";
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius * 0.5, 0, Math.PI * 2);
